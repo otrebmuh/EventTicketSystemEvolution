@@ -99,7 +99,7 @@
     - Implement rate limiting for reset requests
     - _Requirements: 4.1, 4.2, 4.3, 4.5_
 
-  - [ ]* 3.4 Write unit tests for authentication flows
+  - [x] 3.4 Write unit tests for authentication flows
     - Test user registration validation and email verification
     - Test login authentication and JWT token handling
     - Test password reset flow and rate limiting
