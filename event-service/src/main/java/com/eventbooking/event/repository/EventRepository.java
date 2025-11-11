@@ -25,12 +25,13 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
     
     // Optimized search query with proper indexing
     @Query("""
-        SELECT e FROM Event e 
-        LEFT JOIN FETCH e.venue v 
-        LEFT JOIN FETCH e.category c 
+        SELECT DISTINCT e FROM Event e 
+        LEFT JOIN e.venue v 
+        LEFT JOIN e.category c 
         WHERE (:query IS NULL OR 
                LOWER(e.name) LIKE LOWER(CONCAT('%', :query, '%')) OR 
-               LOWER(e.description) LIKE LOWER(CONCAT('%', :query, '%'))) 
+               LOWER(e.description) LIKE LOWER(CONCAT('%', :query, '%')) OR
+               LOWER(v.name) LIKE LOWER(CONCAT('%', :query, '%'))) 
         AND (:city IS NULL OR LOWER(v.city) = LOWER(:city)) 
         AND (:categoryId IS NULL OR c.id = :categoryId) 
         AND (:dateFrom IS NULL OR e.eventDate >= :dateFrom) 
