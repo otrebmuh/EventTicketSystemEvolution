@@ -85,7 +85,7 @@
     - Add password complexity validation (12+ chars, mixed case, numbers, special chars)
     - _Requirements: 1.1, 1.2, 1.4, 1.5, 2.1, 2.2, 2.4_
 
-  - [ ] 3.2 Implement user login and JWT authentication
+  - [x] 3.2 Implement user login and JWT authentication
     - Create JWT token generation and validation
     - Implement login endpoint with credential validation
     - Add session management with Redis
