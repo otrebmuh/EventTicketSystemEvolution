@@ -106,7 +106,7 @@
     - _Requirements: 1.1-1.5, 2.1-2.5, 3.1-3.5, 4.1-4.5_
 
 - [ ] 4. Implement Event Management Service
-  - [ ] 4.1 Create event creation and management functionality
+  - [x] 4.1 Create event creation and management functionality
     - Implement Event entity and repository with PostgreSQL
     - Create event creation endpoint with validation
     - Add event editing capabilities for organizers
