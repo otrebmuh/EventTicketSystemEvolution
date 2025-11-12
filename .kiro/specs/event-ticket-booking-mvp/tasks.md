@@ -128,7 +128,7 @@
     - Add CloudFront CDN integration for image delivery
     - _Requirements: 5.2, 5.5_
 
-  - [ ]* 4.4 Write unit tests for event management
+  - [x] 4.4 Write unit tests for event management
     - Test event creation and validation
     - Test search functionality and filtering
     - Test image upload and S3 integration
