@@ -135,7 +135,7 @@
     - _Requirements: 5.1-5.5, 6.1-6.5_
 
 - [ ] 5. Implement Ticket Service
-  - [ ] 5.1 Create ticket type and inventory management
+  - [x] 5.1 Create ticket type and inventory management
     - Implement TicketType entity with pricing and availability
     - Create ticket type creation and management endpoints
     - Add real-time inventory tracking with Redis
