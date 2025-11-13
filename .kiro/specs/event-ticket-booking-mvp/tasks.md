@@ -156,7 +156,7 @@
     - Create ticket retrieval endpoints for users
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
 
-  - [ ]* 5.4 Write unit tests for ticket operations
+  - [x] 5.4 Write unit tests for ticket operations
     - Test ticket type creation and inventory management
     - Test reservation system and expiration handling
     - Test ticket generation and QR code creation
