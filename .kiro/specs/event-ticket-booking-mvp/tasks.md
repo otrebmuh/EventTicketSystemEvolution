@@ -149,7 +149,7 @@
     - Create reservation cleanup for expired reservations
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
-  - [ ] 5.3 Implement digital ticket generation
+  - [x] 5.3 Implement digital ticket generation
     - Create Ticket entity with unique identifiers
     - Implement QR code generation for each ticket
     - Add ticket number generation system
