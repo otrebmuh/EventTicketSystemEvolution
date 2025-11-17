@@ -2,6 +2,7 @@ package com.eventbooking.payment.service;
 
 import com.eventbooking.payment.dto.CreateOrderRequest;
 import com.eventbooking.payment.dto.OrderDto;
+import com.eventbooking.payment.dto.RefundResponse;
 import com.eventbooking.payment.dto.UpdateOrderStatusRequest;
 import com.eventbooking.payment.entity.PaymentStatus;
 import org.springframework.data.domain.Page;
@@ -55,4 +56,19 @@ public interface OrderService {
      * Mark order as payment failed
      */
     OrderDto markPaymentFailed(UUID orderId, String errorMessage);
+    
+    /**
+     * Confirm order after successful payment
+     */
+    OrderDto confirmOrder(UUID orderId, UUID userId, String paymentIntentId);
+    
+    /**
+     * Cancel order with full refund
+     */
+    RefundResponse cancelOrderWithRefund(UUID orderId, UUID userId, String cancellationReason);
+    
+    /**
+     * Partially cancel order items with refund
+     */
+    RefundResponse partialCancelOrder(UUID orderId, UUID userId, java.util.List<UUID> orderItemIds, String cancellationReason);
 }

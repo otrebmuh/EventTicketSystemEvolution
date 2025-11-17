@@ -177,7 +177,7 @@
     - Implement payment failure handling and error messages
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
 
-  - [ ] 6.3 Add order confirmation and cancellation
+  - [-] 6.3 Add order confirmation and cancellation
     - Create order confirmation endpoint
     - Implement order cancellation within specified timeframe
     - Add partial order cancellation support

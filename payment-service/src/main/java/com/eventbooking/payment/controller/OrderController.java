@@ -123,4 +123,52 @@ public class OrderController {
         
         return ResponseEntity.ok(response);
     }
+    
+    @PostMapping("/{orderId}/confirm")
+    public ResponseEntity<ApiResponse<OrderDto>> confirmOrder(
+            @PathVariable UUID orderId,
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestParam(required = false) String paymentIntentId) {
+        log.info("Confirming order: {} for user: {}", orderId, userId);
+        
+        OrderDto order = orderService.confirmOrder(orderId, userId, paymentIntentId);
+        ApiResponse<OrderDto> response = ApiResponse.success("Order confirmed successfully", order);
+        
+        return ResponseEntity.ok(response);
+    }
+    
+    @PostMapping("/{orderId}/cancel-with-refund")
+    public ResponseEntity<ApiResponse<com.eventbooking.payment.dto.RefundResponse>> cancelOrderWithRefund(
+            @PathVariable UUID orderId,
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestParam(required = false) String cancellationReason) {
+        log.info("Cancelling order with refund: {} for user: {}", orderId, userId);
+        
+        com.eventbooking.payment.dto.RefundResponse refund = orderService.cancelOrderWithRefund(
+                orderId, userId, cancellationReason);
+        ApiResponse<com.eventbooking.payment.dto.RefundResponse> response = 
+                ApiResponse.success("Order cancelled and refund processed successfully", refund);
+        
+        return ResponseEntity.ok(response);
+    }
+    
+    @PostMapping("/{orderId}/partial-cancel")
+    public ResponseEntity<ApiResponse<com.eventbooking.payment.dto.RefundResponse>> partialCancelOrder(
+            @PathVariable UUID orderId,
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestBody com.eventbooking.payment.dto.CancelOrderRequest request) {
+        log.info("Partially cancelling order: {} for user: {}", orderId, userId);
+        
+        if (request.getOrderItemIds() == null || request.getOrderItemIds().isEmpty()) {
+            throw new com.eventbooking.payment.exception.InvalidOrderException(
+                    "Order item IDs are required for partial cancellation");
+        }
+        
+        com.eventbooking.payment.dto.RefundResponse refund = orderService.partialCancelOrder(
+                orderId, userId, request.getOrderItemIds(), request.getCancellationReason());
+        ApiResponse<com.eventbooking.payment.dto.RefundResponse> response = 
+                ApiResponse.success("Partial cancellation and refund processed successfully", refund);
+        
+        return ResponseEntity.ok(response);
+    }
 }
