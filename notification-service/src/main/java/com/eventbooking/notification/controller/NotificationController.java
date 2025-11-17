@@ -3,8 +3,11 @@ package com.eventbooking.notification.controller;
 import com.eventbooking.common.dto.ApiResponse;
 import com.eventbooking.notification.dto.NotificationDto;
 import com.eventbooking.notification.dto.SendNotificationRequest;
+import com.eventbooking.notification.dto.TicketDeliveryRequest;
+import com.eventbooking.notification.dto.TicketDeliveryResponse;
 import com.eventbooking.notification.entity.NotificationStatus;
 import com.eventbooking.notification.service.NotificationService;
+import com.eventbooking.notification.service.TicketDeliveryService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,9 +28,11 @@ public class NotificationController {
     private static final Logger log = LoggerFactory.getLogger(NotificationController.class);
     
     private final NotificationService notificationService;
+    private final TicketDeliveryService ticketDeliveryService;
     
-    public NotificationController(NotificationService notificationService) {
+    public NotificationController(NotificationService notificationService, TicketDeliveryService ticketDeliveryService) {
         this.notificationService = notificationService;
+        this.ticketDeliveryService = ticketDeliveryService;
     }
     
     @PostMapping("/send")
@@ -74,5 +79,27 @@ public class NotificationController {
         NotificationDto notification = notificationService.resendNotification(notificationId);
         
         return ResponseEntity.ok(ApiResponse.success(notification));
+    }
+    
+    @PostMapping("/tickets/deliver")
+    public ResponseEntity<ApiResponse<TicketDeliveryResponse>> deliverTickets(
+            @Valid @RequestBody TicketDeliveryRequest request) {
+        log.info("Received request to deliver tickets for order: {}", request.getOrderId());
+        
+        TicketDeliveryResponse response = ticketDeliveryService.deliverTickets(request);
+        
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success(response));
+    }
+    
+    @GetMapping("/tickets/{ticketId}/link")
+    public ResponseEntity<ApiResponse<String>> getTicketWebLink(
+            @PathVariable UUID ticketId) {
+        log.info("Generating web link for ticket: {}", ticketId);
+        
+        String webLink = ticketDeliveryService.generateTicketWebLink(ticketId);
+        
+        return ResponseEntity.ok(ApiResponse.success(webLink));
     }
 }

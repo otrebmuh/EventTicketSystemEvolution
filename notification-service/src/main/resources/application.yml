@@ -56,6 +56,13 @@ aws:
   ses:
     region: ${AWS_REGION:us-east-1}
 
+app:
+  base-url: ${APP_BASE_URL:http://localhost:3000}
+
+ticket:
+  service:
+    url: ${TICKET_SERVICE_URL:http://localhost:8083}
+
 ---
 spring:
   config:

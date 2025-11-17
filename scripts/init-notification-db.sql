@@ -49,7 +49,7 @@ CREATE TABLE notifications (
         'PENDING', 'QUEUED', 'PROCESSING', 'SENT', 'DELIVERED', 
         'FAILED', 'BOUNCED', 'COMPLAINED', 'PERMANENTLY_FAILED'
     )),
-    channel VARCHAR(20) DEFAULT 'EMAIL' CHECK (channel IN ('EMAIL', 'SMS', 'PUSH')),
+    channel VARCHAR(20) DEFAULT 'EMAIL' CHECK (channel IN ('EMAIL', 'SMS', 'PUSH', 'WEB', 'MOBILE')),
     retry_count INTEGER DEFAULT 0,
     max_retries INTEGER DEFAULT 3,
     sent_at TIMESTAMP,
@@ -109,6 +109,14 @@ INSERT INTO notification_templates (name, subject, html_content, text_content, c
     'Order Confirmation - {{orderNumber}}',
     '<html><body><h1>Order Confirmed!</h1><p>Hi {{customerName}},</p><p>Your order {{orderNumber}} has been confirmed.</p><p>Total: {{totalAmount}}</p><p>Event: {{eventName}}</p><p>Date: {{eventDate}}</p></body></html>',
     'Hi {{customerName}}, Your order {{orderNumber}} has been confirmed. Total: {{totalAmount}}. Event: {{eventName}} on {{eventDate}}.',
+    'TRANSACTIONAL',
+    '00000000-0000-0000-0000-000000000000'
+),
+(
+    'TICKET_DELIVERY',
+    'Your Event Tickets',
+    '<html><body><h1>Your Event Tickets</h1><p>Thank you for your purchase! Your tickets are ready.</p><p>Please check the attached tickets or use the links provided in the email.</p></body></html>',
+    'Your Event Tickets - Thank you for your purchase! Your tickets are ready. Please check the attached tickets or use the links provided in the email.',
     'TRANSACTIONAL',
     '00000000-0000-0000-0000-000000000000'
 );
