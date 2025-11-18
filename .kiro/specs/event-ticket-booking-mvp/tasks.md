@@ -212,7 +212,7 @@
     - _Requirements: 11.1-11.5, 12.1-12.5_
 
 - [ ] 8. Implement inter-service communication
-  - [ ] 8.1 Set up service-to-service authentication
+  - [x] 8.1 Set up service-to-service authentication
     - Implement JWT validation across all services
     - Create service discovery configuration
     - Add circuit breaker pattern for external calls

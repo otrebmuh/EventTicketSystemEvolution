@@ -37,11 +37,63 @@ management:
       prometheus:
         enabled: true
 
+service:
+  auth:
+    secret: ${SERVICE_AUTH_SECRET:defaultServiceSecret123456789012345678901234567890}
+
 services:
-  auth-service:
-    url: http://localhost:8081
-  ticket-service:
-    url: http://localhost:8083
+  auth:
+    url: ${AUTH_SERVICE_URL:http://localhost:8080}
+  event:
+    url: ${EVENT_SERVICE_URL:http://localhost:8081}
+  ticket:
+    url: ${TICKET_SERVICE_URL:http://localhost:8082}
+  notification:
+    url: ${NOTIFICATION_SERVICE_URL:http://localhost:8084}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      authService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        waitDurationInOpenState: 30s
+        failureRateThreshold: 50
+      ticketService:
+        registerHealthIndicator: true
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        permittedNumberOfCallsInHalfOpenState: 5
+        waitDurationInOpenState: 60s
+        failureRateThreshold: 40
+      paymentGateway:
+        registerHealthIndicator: true
+        slidingWindowSize: 15
+        minimumNumberOfCalls: 8
+        permittedNumberOfCallsInHalfOpenState: 4
+        waitDurationInOpenState: 45s
+        failureRateThreshold: 30
+        slowCallDurationThreshold: 5s
+        slowCallRateThreshold: 60
+  
+  retry:
+    instances:
+      authService:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+      ticketService:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+      paymentGateway:
+        maxAttempts: 2
+        waitDuration: 2s
+        enableExponentialBackoff: false
 
 stripe:
   api-key: ${STRIPE_API_KEY:}
@@ -57,7 +109,11 @@ spring:
     url: jdbc:postgresql://payment-db:5432/payment_service
 
 services:
-  auth-service:
+  auth:
     url: http://auth-service:8080
-  ticket-service:
-    url: http://ticket-service:8080
+  event:
+    url: http://event-service:8081
+  ticket:
+    url: http://ticket-service:8082
+  notification:
+    url: http://notification-service:8084

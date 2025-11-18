@@ -59,9 +59,62 @@ aws:
 app:
   base-url: ${APP_BASE_URL:http://localhost:3000}
 
-ticket:
-  service:
-    url: ${TICKET_SERVICE_URL:http://localhost:8083}
+service:
+  auth:
+    secret: ${SERVICE_AUTH_SECRET:defaultServiceSecret123456789012345678901234567890}
+
+services:
+  auth:
+    url: ${AUTH_SERVICE_URL:http://localhost:8080}
+  event:
+    url: ${EVENT_SERVICE_URL:http://localhost:8081}
+  ticket:
+    url: ${TICKET_SERVICE_URL:http://localhost:8082}
+  payment:
+    url: ${PAYMENT_SERVICE_URL:http://localhost:8083}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      authService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        waitDurationInOpenState: 30s
+        failureRateThreshold: 50
+      ticketService:
+        registerHealthIndicator: true
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        permittedNumberOfCallsInHalfOpenState: 5
+        waitDurationInOpenState: 60s
+        failureRateThreshold: 40
+      emailService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        waitDurationInOpenState: 60s
+        failureRateThreshold: 60
+  
+  retry:
+    instances:
+      authService:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+      ticketService:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+      emailService:
+        maxAttempts: 5
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
 
 ---
 spring:
@@ -71,3 +124,13 @@ spring:
   
   datasource:
     url: jdbc:postgresql://notification-db:5432/notification_service
+
+services:
+  auth:
+    url: http://auth-service:8080
+  event:
+    url: http://event-service:8081
+  ticket:
+    url: http://ticket-service:8082
+  payment:
+    url: http://payment-service:8083

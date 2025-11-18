@@ -64,6 +64,63 @@ jwt:
   secret: ${JWT_SECRET:mySecretKey}
   expiration: 86400000 # 24 hours
 
+service:
+  auth:
+    secret: ${SERVICE_AUTH_SECRET:defaultServiceSecret123456789012345678901234567890}
+
+services:
+  event:
+    url: ${EVENT_SERVICE_URL:http://localhost:8081}
+  ticket:
+    url: ${TICKET_SERVICE_URL:http://localhost:8082}
+  payment:
+    url: ${PAYMENT_SERVICE_URL:http://localhost:8083}
+  notification:
+    url: ${NOTIFICATION_SERVICE_URL:http://localhost:8084}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      eventService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        waitDurationInOpenState: 30s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+      ticketService:
+        registerHealthIndicator: true
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        permittedNumberOfCallsInHalfOpenState: 5
+        waitDurationInOpenState: 60s
+        failureRateThreshold: 40
+      paymentService:
+        registerHealthIndicator: true
+        slidingWindowSize: 15
+        minimumNumberOfCalls: 8
+        permittedNumberOfCallsInHalfOpenState: 4
+        waitDurationInOpenState: 45s
+        failureRateThreshold: 30
+  
+  retry:
+    instances:
+      eventService:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+      ticketService:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+      paymentService:
+        maxAttempts: 2
+        waitDuration: 2s
+        enableExponentialBackoff: false
+
 ---
 spring:
   config:
