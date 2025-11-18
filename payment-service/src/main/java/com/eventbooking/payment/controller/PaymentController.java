@@ -1,8 +1,12 @@
 package com.eventbooking.payment.controller;
 
 import com.eventbooking.common.dto.ApiResponse;
+import com.eventbooking.common.saga.SagaContext;
 import com.eventbooking.payment.dto.PaymentResponse;
 import com.eventbooking.payment.dto.ProcessPaymentRequest;
+import com.eventbooking.payment.dto.TicketPurchaseRequest;
+import com.eventbooking.payment.dto.TicketPurchaseResponse;
+import com.eventbooking.payment.saga.TicketPurchaseSaga;
 import com.eventbooking.payment.service.PaymentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +24,7 @@ import java.util.UUID;
 public class PaymentController {
     
     private final PaymentService paymentService;
+    private final TicketPurchaseSaga ticketPurchaseSaga;
     
     @PostMapping("/process")
     public ResponseEntity<ApiResponse<PaymentResponse>> processPayment(
@@ -64,5 +69,50 @@ public class PaymentController {
         
         PaymentResponse response = paymentService.getPaymentStatus(transactionId);
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+    
+    /**
+     * Purchase tickets using saga pattern for distributed transaction handling
+     */
+    @PostMapping("/purchase-tickets")
+    public ResponseEntity<ApiResponse<TicketPurchaseResponse>> purchaseTickets(
+            @Valid @RequestBody TicketPurchaseRequest request,
+            @RequestHeader("X-User-Id") UUID userId) {
+        log.info("Processing ticket purchase for user: {}, event: {}", userId, request.getEventId());
+        
+        // Create saga context
+        SagaContext context = TicketPurchaseSaga.createPurchaseContext();
+        context.put("userId", userId);
+        context.put("eventId", request.getEventId());
+        context.put("ticketTypeId", request.getTicketTypeId());
+        context.put("quantity", request.getQuantity());
+        context.put("unitPrice", request.getUnitPrice());
+        context.put("paymentMethodId", request.getPaymentMethodId());
+        context.put("reservationId", request.getReservationId());
+        
+        // Execute saga
+        boolean success = ticketPurchaseSaga.executePurchase(context);
+        
+        if (success) {
+            TicketPurchaseResponse response = TicketPurchaseResponse.builder()
+                    .sagaId(context.getSagaId())
+                    .orderId(context.get("orderId", UUID.class))
+                    .orderNumber(context.get("orderNumber", String.class))
+                    .transactionId(context.get("transactionId", String.class))
+                    .status("SUCCESS")
+                    .message("Ticket purchase completed successfully")
+                    .build();
+            
+            return ResponseEntity.ok(ApiResponse.success("Ticket purchase successful", response));
+        } else {
+            TicketPurchaseResponse response = TicketPurchaseResponse.builder()
+                    .sagaId(context.getSagaId())
+                    .status("FAILED")
+                    .message(context.getErrorMessage())
+                    .build();
+            
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("Ticket purchase failed: " + context.getErrorMessage()));
+        }
     }
 }
