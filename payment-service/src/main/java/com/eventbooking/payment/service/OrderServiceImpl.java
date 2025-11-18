@@ -35,6 +35,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final OrderMapper orderMapper;
     private final PaymentService paymentService;
+    private final PaymentEventPublisher eventPublisher;
     
     @Override
     @Transactional
@@ -163,6 +164,9 @@ public class OrderServiceImpl implements OrderService {
         order.setPaymentStatus(PaymentStatus.CANCELLED);
         Order cancelledOrder = orderRepository.save(order);
         
+        // Publish order cancelled event
+        eventPublisher.publishOrderCancelled(cancelledOrder);
+        
         log.info("Order cancelled successfully: {}", orderId);
         return orderMapper.toDto(cancelledOrder);
     }
@@ -183,6 +187,9 @@ public class OrderServiceImpl implements OrderService {
         
         order.setPaymentStatus(PaymentStatus.CONFIRMED);
         Order confirmedOrder = orderRepository.save(order);
+        
+        // Publish order confirmed event
+        eventPublisher.publishOrderConfirmed(confirmedOrder);
         
         log.info("Payment confirmed for order: {}", orderId);
         return orderMapper.toDto(confirmedOrder);

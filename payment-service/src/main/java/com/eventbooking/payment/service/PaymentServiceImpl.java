@@ -32,6 +32,7 @@ public class PaymentServiceImpl implements PaymentService {
     
     private final OrderRepository orderRepository;
     private final PaymentTransactionRepository transactionRepository;
+    private final PaymentEventPublisher eventPublisher;
     
     @Override
     @Transactional
@@ -80,6 +81,9 @@ public class PaymentServiceImpl implements PaymentService {
                 transactionRepository.save(transaction);
                 
                 log.info("Payment succeeded for order: {}", order.getId());
+                
+                // Publish payment completed event
+                eventPublisher.publishPaymentCompleted(order, transaction.getGatewayTransactionId());
                 
                 return buildSuccessResponse(transaction, paymentIntent);
             } else if ("requires_action".equals(paymentIntent.getStatus()) || 
@@ -155,6 +159,9 @@ public class PaymentServiceImpl implements PaymentService {
                 
                 log.info("Payment confirmed for order: {}", order.getId());
                 
+                // Publish payment completed event
+                eventPublisher.publishPaymentCompleted(order, transaction.getGatewayTransactionId());
+                
                 return buildSuccessResponse(transaction, paymentIntent);
             } else {
                 throw new PaymentProcessingException("Payment intent not in succeeded status: " + paymentIntent.getStatus());
@@ -211,6 +218,9 @@ public class PaymentServiceImpl implements PaymentService {
             orderRepository.save(order);
             
             log.info("Refund processed successfully for order: {}", orderId);
+            
+            // Publish refund processed event
+            eventPublisher.publishRefundProcessed(order, refund.getId());
             
             return PaymentResponse.builder()
                     .transactionId(refundTransaction.getId())
@@ -313,6 +323,9 @@ public class PaymentServiceImpl implements PaymentService {
         order.setPaymentStatus(PaymentStatus.PAYMENT_FAILED);
         orderRepository.save(order);
         
+        // Publish payment failed event
+        eventPublisher.publishPaymentFailed(order, e.getMessage());
+        
         PaymentTransaction transaction = PaymentTransaction.builder()
                 .order(order)
                 .amount(order.getTotalAmount())
@@ -344,6 +357,9 @@ public class PaymentServiceImpl implements PaymentService {
     private PaymentResponse handleStripeError(Order order, StripeException e) {
         order.setPaymentStatus(PaymentStatus.PAYMENT_FAILED);
         orderRepository.save(order);
+        
+        // Publish payment failed event
+        eventPublisher.publishPaymentFailed(order, e.getMessage());
         
         PaymentTransaction transaction = PaymentTransaction.builder()
                 .order(order)

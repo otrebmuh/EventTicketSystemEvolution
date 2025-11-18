@@ -96,6 +96,18 @@ ticket:
   reservation:
     timeout-minutes: 15
 
+aws:
+  region: ${AWS_REGION:us-east-1}
+  access-key-id: ${AWS_ACCESS_KEY_ID:}
+  secret-access-key: ${AWS_SECRET_ACCESS_KEY:}
+  sqs:
+    endpoint: ${AWS_SQS_ENDPOINT:}
+    ticket-events-queue: ${AWS_SQS_TICKET_EVENTS_QUEUE:ticket-events-queue}
+    ticket-events-dlq: ${AWS_SQS_TICKET_EVENTS_DLQ:ticket-events-dlq}
+  sns:
+    endpoint: ${AWS_SNS_ENDPOINT:}
+    ticket-events-topic: ${AWS_SNS_TICKET_EVENTS_TOPIC:arn:aws:sns:us-east-1:000000000000:ticket-events}
+
 ---
 spring:
   config:

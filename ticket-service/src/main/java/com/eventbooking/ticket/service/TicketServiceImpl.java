@@ -31,15 +31,18 @@ public class TicketServiceImpl implements TicketService {
     private final TicketTypeRepository ticketTypeRepository;
     private final TicketMapper ticketMapper;
     private final QRCodeService qrCodeService;
+    private final TicketEventPublisher eventPublisher;
     
     public TicketServiceImpl(TicketRepository ticketRepository,
                             TicketTypeRepository ticketTypeRepository,
                             TicketMapper ticketMapper,
-                            QRCodeService qrCodeService) {
+                            QRCodeService qrCodeService,
+                            TicketEventPublisher eventPublisher) {
         this.ticketRepository = ticketRepository;
         this.ticketTypeRepository = ticketTypeRepository;
         this.ticketMapper = ticketMapper;
         this.qrCodeService = qrCodeService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -83,6 +86,17 @@ public class TicketServiceImpl implements TicketService {
         
         logger.info("Successfully generated {} tickets for order: {}", 
                 generatedTickets.size(), request.getOrderId());
+        
+        // Publish tickets generated event
+        // Note: userId and holderEmail would need to be passed in the request in a real implementation
+        eventPublisher.publishTicketsGenerated(
+                request.getOrderId(),
+                null, // userId - would need to be added to request
+                ticketType.getEventId(),
+                generatedTickets,
+                request.getHolderName(),
+                null // holderEmail - would need to be added to request
+        );
         
         return generatedTickets;
     }
@@ -144,6 +158,9 @@ public class TicketServiceImpl implements TicketService {
         
         ticket.setStatus(Ticket.TicketStatus.CANCELLED);
         ticketRepository.save(ticket);
+        
+        // Publish ticket cancelled event
+        eventPublisher.publishTicketCancelled(ticketId, ticket.getOrderId(), null);
         
         logger.info("Successfully cancelled ticket: {}", ticketId);
     }

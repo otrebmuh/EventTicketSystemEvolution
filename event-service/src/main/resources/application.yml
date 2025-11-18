@@ -93,13 +93,18 @@ resilience4j:
         exponentialBackoffMultiplier: 2
 
 aws:
-  s3:
-    bucket-name: ${AWS_S3_BUCKET:event-images-bucket}
-    region: ${AWS_REGION:us-east-1}
-  cloudfront:
-    domain: ${AWS_CLOUDFRONT_DOMAIN:}
+  region: ${AWS_REGION:us-east-1}
   access-key-id: ${AWS_ACCESS_KEY_ID:}
   secret-access-key: ${AWS_SECRET_ACCESS_KEY:}
+  s3:
+    bucket-name: ${AWS_S3_BUCKET:event-images-bucket}
+  cloudfront:
+    domain: ${AWS_CLOUDFRONT_DOMAIN:}
+  sqs:
+    endpoint: ${AWS_SQS_ENDPOINT:}
+  sns:
+    endpoint: ${AWS_SNS_ENDPOINT:}
+    event-management-topic: ${AWS_SNS_EVENT_MANAGEMENT_TOPIC:arn:aws:sns:us-east-1:000000000000:event-management-events}
 
 ---
 spring:

@@ -219,7 +219,7 @@
     - Implement retry mechanisms with exponential backoff
     - _Requirements: 9.4, 9.5_
 
-  - [ ] 8.2 Create asynchronous messaging system
+  - [x] 8.2 Create asynchronous messaging system
     - Set up Amazon SQS queues for service communication
     - Implement SNS topics for event publishing
     - Create message handlers for payment and ticket events

@@ -36,6 +36,19 @@ logging:
   level:
     com.eventbooking: DEBUG
 
+aws:
+  region: ${AWS_REGION:us-east-1}
+  access-key-id: ${AWS_ACCESS_KEY_ID:}
+  secret-access-key: ${AWS_SECRET_ACCESS_KEY:}
+  sqs:
+    endpoint: ${AWS_SQS_ENDPOINT:}
+    payment-events-queue: ${AWS_SQS_PAYMENT_EVENTS_QUEUE:payment-events-queue}
+    ticket-events-queue: ${AWS_SQS_TICKET_EVENTS_QUEUE:ticket-events-queue}
+    payment-events-dlq: ${AWS_SQS_PAYMENT_EVENTS_DLQ:payment-events-dlq}
+    ticket-events-dlq: ${AWS_SQS_TICKET_EVENTS_DLQ:ticket-events-dlq}
+  sns:
+    endpoint: ${AWS_SNS_ENDPOINT:}
+
 management:
   endpoints:
     web:
