@@ -44,6 +44,9 @@ class OrderServiceImplTest {
     @Mock
     private PaymentService paymentService;
     
+    @Mock
+    private PaymentEventPublisher eventPublisher;
+    
     @InjectMocks
     private OrderServiceImpl orderService;
     

@@ -41,6 +41,9 @@ class TicketServiceImplTest {
     @Mock
     private QRCodeService qrCodeService;
 
+    @Mock
+    private TicketEventPublisher eventPublisher;
+
     @InjectMocks
     private TicketServiceImpl ticketService;
 

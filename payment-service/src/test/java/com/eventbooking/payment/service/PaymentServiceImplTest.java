@@ -35,6 +35,9 @@ class PaymentServiceImplTest {
     @Mock
     private PaymentTransactionRepository transactionRepository;
     
+    @Mock
+    private PaymentEventPublisher eventPublisher;
+    
     @InjectMocks
     private PaymentServiceImpl paymentService;
     
