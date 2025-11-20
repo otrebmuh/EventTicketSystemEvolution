@@ -276,7 +276,7 @@
     - Create mobile-optimized ticket view
     - _Requirements: 10.1-10.5, 11.1-11.5_
 
-  - [ ]* 9.6 Write frontend unit and integration tests
+  - [x] 9.6 Write frontend unit and integration tests
     - Test React components with Jest and React Testing Library
     - Test API integration and error handling
     - Test user flows from registration to ticket purchase
