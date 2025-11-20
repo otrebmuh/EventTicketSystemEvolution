@@ -21,8 +21,8 @@ spring:
         format_sql: true
   
   redis:
-    host: localhost
-    port: 6379
+    host: ${SPRING_REDIS_HOST:localhost}
+    port: ${SPRING_REDIS_PORT:6379}
     timeout: 2000ms
     lettuce:
       pool:
@@ -116,7 +116,8 @@ spring:
     url: jdbc:postgresql://event-db:5432/event_service
   
   redis:
-    host: redis
+    host: ${SPRING_REDIS_HOST:redis-cache}
+    port: ${SPRING_REDIS_PORT:6379}
 
 services:
   auth:

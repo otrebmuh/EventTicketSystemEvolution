@@ -86,3 +86,6 @@ coverage/
 # Test results
 test-results/
 junit.xml
+
+dv8/
+.DS_Store

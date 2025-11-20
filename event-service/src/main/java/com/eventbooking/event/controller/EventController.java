@@ -171,13 +171,6 @@ public class EventController {
         return ResponseEntity.ok(ApiResponse.success(updatedEvent));
     }
     
-    // Internal API for other services
-    @GetMapping("/internal/{eventId}")
-    public ResponseEntity<EventDto> getEventForTicketService(@PathVariable UUID eventId) {
-        EventDto event = eventService.getEventForTicketService(eventId);
-        return ResponseEntity.ok(event);
-    }
-    
     private UUID extractUserIdFromToken(String authHeader) {
         String token = authHeader.replace("Bearer ", "");
         return jwtUtil.extractUserId(token);

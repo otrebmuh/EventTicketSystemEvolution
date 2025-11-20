@@ -64,7 +64,7 @@ services:
   # Application services with development configurations
   auth-service:
     environment:
-      SPRING_PROFILES_ACTIVE: docker,dev
+      SPRING_PROFILES_ACTIVE: docker
       LOGGING_LEVEL_COM_EVENTBOOKING: DEBUG
       SPRING_JPA_SHOW_SQL: "true"
     volumes:
@@ -72,7 +72,7 @@ services:
 
   event-service:
     environment:
-      SPRING_PROFILES_ACTIVE: docker,dev
+      SPRING_PROFILES_ACTIVE: docker
       LOGGING_LEVEL_COM_EVENTBOOKING: DEBUG
       SPRING_JPA_SHOW_SQL: "true"
     volumes:
@@ -80,7 +80,7 @@ services:
 
   ticket-service:
     environment:
-      SPRING_PROFILES_ACTIVE: docker,dev
+      SPRING_PROFILES_ACTIVE: docker
       LOGGING_LEVEL_COM_EVENTBOOKING: DEBUG
       SPRING_JPA_SHOW_SQL: "true"
     volumes:
@@ -88,7 +88,7 @@ services:
 
   payment-service:
     environment:
-      SPRING_PROFILES_ACTIVE: docker,dev
+      SPRING_PROFILES_ACTIVE: docker
       LOGGING_LEVEL_COM_EVENTBOOKING: DEBUG
       SPRING_JPA_SHOW_SQL: "true"
     volumes:
@@ -96,7 +96,7 @@ services:
 
   notification-service:
     environment:
-      SPRING_PROFILES_ACTIVE: docker,dev
+      SPRING_PROFILES_ACTIVE: docker
       LOGGING_LEVEL_COM_EVENTBOOKING: DEBUG
       SPRING_JPA_SHOW_SQL: "true"
     volumes:
