@@ -62,8 +62,34 @@ const EventDetailsPage = () => {
       return;
     }
 
-    // TODO: Implement checkout flow in next task
-    alert('Checkout functionality will be implemented in the next task');
+    if (!selectedEvent) {
+      alert('Event information is not available');
+      return;
+    }
+
+    // Prepare checkout data
+    const selectedTicketsList = ticketTypes
+      .filter((ticketType: TicketType) => selectedTickets[ticketType.id] > 0)
+      .map((ticketType: TicketType) => ({
+        ticketType,
+        quantity: selectedTickets[ticketType.id],
+      }));
+
+    if (selectedTicketsList.length === 0) {
+      alert('Please select at least one ticket');
+      return;
+    }
+
+    // Navigate to checkout with state
+    navigate('/checkout', {
+      state: {
+        eventId: selectedEvent.id,
+        eventName: selectedEvent.name,
+        eventDate: selectedEvent.eventDate,
+        venueName: selectedEvent.venueName,
+        selectedTickets: selectedTicketsList,
+      },
+    });
   };
 
   const formatDate = (dateString: string) => {
