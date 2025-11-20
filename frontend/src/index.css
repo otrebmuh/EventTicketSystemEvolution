@@ -15,3 +15,20 @@
       monospace;
   }
 }
+
+/* Print styles for tickets */
+@media print {
+  body {
+    background: white;
+  }
+  
+  .print\:hidden {
+    display: none !important;
+  }
+  
+  /* Ensure ticket prints on one page */
+  @page {
+    size: auto;
+    margin: 10mm;
+  }
+}

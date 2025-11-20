@@ -12,6 +12,8 @@ import EventDetailsPage from './pages/EventDetailsPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrderConfirmationPage from './pages/OrderConfirmationPage';
 import DashboardPage from './pages/DashboardPage';
+import MyTicketsPage from './pages/MyTicketsPage';
+import TicketDetailsPage from './pages/TicketDetailsPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { initializeTokenRefresh } from './utils/tokenRefresh';
@@ -55,6 +57,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="my-tickets"
+            element={
+              <ProtectedRoute>
+                <MyTicketsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="tickets/:ticketId"
+            element={
+              <ProtectedRoute>
+                <TicketDetailsPage />
               </ProtectedRoute>
             }
           />

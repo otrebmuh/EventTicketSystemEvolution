@@ -71,6 +71,9 @@ const Header = () => {
                 <Link to="/dashboard" className="hover:text-blue-200 transition">
                   Dashboard
                 </Link>
+                <Link to="/my-tickets" className="hover:text-blue-200 transition">
+                  My Tickets
+                </Link>
                 <span className="text-sm">Hello, {user?.firstName}</span>
                 <button
                   onClick={handleLogout}
@@ -161,6 +164,13 @@ const Header = () => {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Dashboard
+                </Link>
+                <Link
+                  to="/my-tickets"
+                  className="block hover:text-blue-200 transition"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  My Tickets
                 </Link>
                 <div className="text-sm">Hello, {user?.firstName}</div>
                 <button

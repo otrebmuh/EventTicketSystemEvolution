@@ -206,7 +206,7 @@ const OrderConfirmationPage = () => {
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4">
           <Link
-            to="/dashboard"
+            to="/my-tickets"
             className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold text-center hover:bg-blue-700 transition"
           >
             View My Tickets

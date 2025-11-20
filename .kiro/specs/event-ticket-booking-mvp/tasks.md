@@ -269,7 +269,7 @@
     - Implement user dashboard for order history
     - _Requirements: 7.1-7.5, 8.1-8.5, 9.1-9.5_
 
-  - [ ] 9.5 Add ticket management features
+  - [x] 9.5 Add ticket management features
     - Create ticket display with QR codes
     - Implement ticket download functionality
     - Add ticket sharing and transfer capabilities

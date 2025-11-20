@@ -213,12 +213,14 @@ const DashboardPage = () => {
                   <div className="text-lg font-bold">
                     Total: ${order.totalAmount.toFixed(2)} {order.currency}
                   </div>
-                  <Link
-                    to={`/order-confirmation/${order.id}`}
-                    className="text-blue-600 hover:underline font-medium"
-                  >
-                    View Details →
-                  </Link>
+                  <div className="flex gap-3">
+                    <Link
+                      to={`/order-confirmation/${order.id}`}
+                      className="text-blue-600 hover:underline font-medium"
+                    >
+                      View Details →
+                    </Link>
+                  </div>
                 </div>
               </div>
             ))}
