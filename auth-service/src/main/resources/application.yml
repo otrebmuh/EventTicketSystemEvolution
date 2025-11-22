@@ -24,6 +24,8 @@ server:
 spring:
   application:
     name: auth-service
+  config:
+    import: optional:classpath:application-monitoring.yml
   
   datasource:
     url: jdbc:postgresql://localhost:5432/auth_service

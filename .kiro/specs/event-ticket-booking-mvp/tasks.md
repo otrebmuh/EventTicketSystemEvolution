@@ -304,7 +304,7 @@
     - _Requirements: 9.1-9.5, 10.1-10.5_
 
 - [ ] 11. Set up monitoring and deployment
-  - [ ] 11.1 Configure application monitoring
+  - [x] 11.1 Configure application monitoring
     - Set up CloudWatch for application metrics and logs
     - Implement distributed tracing with AWS X-Ray
     - Create health check endpoints for all services

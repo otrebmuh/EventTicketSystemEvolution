@@ -1,0 +1,152 @@
+{
+  "widgets": [
+    {
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["EventBookingSystem", "api.calls.total", {"stat": "Sum", "label": "Total API Calls"}]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "us-east-1",
+        "title": "API Call Volume",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["EventBookingSystem", "api.response.time", {"stat": "Average", "label": "Avg Response Time"}],
+          ["...", {"stat": "p99", "label": "P99 Response Time"}]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "us-east-1",
+        "title": "API Response Times",
+        "period": 300,
+        "yAxis": {
+          "left": {
+            "label": "Milliseconds"
+          }
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["EventBookingSystem", "api.calls.total", {"stat": "Sum", "label": "Errors"}]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "us-east-1",
+        "title": "Error Rate",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["EventBookingSystem", "user.registration.total", {"stat": "Sum", "label": "Registrations"}],
+          [".", "user.login.total", {"stat": "Sum", "label": "Logins"}]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "us-east-1",
+        "title": "User Activity",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["EventBookingSystem", "ticket.purchase.total", {"stat": "Sum", "label": "Purchases"}],
+          [".", "ticket.purchase.amount", {"stat": "Sum", "label": "Revenue"}]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "us-east-1",
+        "title": "Ticket Sales",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["EventBookingSystem", "payment.processing.total", {"stat": "Sum", "label": "Total Payments"}],
+          ["...", {"stat": "Sum", "label": "Failed Payments"}]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "us-east-1",
+        "title": "Payment Processing",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["EventBookingSystem", "database.query.time", {"stat": "Average", "label": "Avg Query Time"}],
+          ["...", {"stat": "p99", "label": "P99 Query Time"}]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "us-east-1",
+        "title": "Database Performance",
+        "period": 300,
+        "yAxis": {
+          "left": {
+            "label": "Milliseconds"
+          }
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["EventBookingSystem", "cache.access.total", {"stat": "Sum", "label": "Cache Hits"}],
+          ["...", {"stat": "Sum", "label": "Cache Misses"}]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "us-east-1",
+        "title": "Cache Performance",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["AWS/ECS", "MemoryUtilization", {"stat": "Average", "label": "Memory Usage"}],
+          [".", "CPUUtilization", {"stat": "Average", "label": "CPU Usage"}]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "us-east-1",
+        "title": "System Resources",
+        "period": 300,
+        "yAxis": {
+          "left": {
+            "label": "Percent"
+          }
+        }
+      }
+    },
+    {
+      "type": "log",
+      "properties": {
+        "query": "SOURCE '/aws/ecs/event-booking-system'\n| fields @timestamp, @message\n| filter @message like /ERROR/\n| sort @timestamp desc\n| limit 20",
+        "region": "us-east-1",
+        "title": "Recent Errors",
+        "stacked": false
+      }
+    }
+  ]
+}

@@ -24,6 +24,8 @@ server:
 spring:
   application:
     name: payment-service
+  config:
+    import: optional:classpath:application-monitoring.yml
   
   datasource:
     url: jdbc:postgresql://localhost:5435/payment_service

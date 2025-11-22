@@ -1,0 +1,49 @@
+{
+  "version": 2,
+  "rules": [
+    {
+      "description": "Health check endpoints - low sampling",
+      "host": "*",
+      "http_method": "GET",
+      "url_path": "/actuator/health",
+      "fixed_target": 0,
+      "rate": 0.01
+    },
+    {
+      "description": "Payment processing - high sampling",
+      "host": "*",
+      "http_method": "*",
+      "url_path": "/api/payments/*",
+      "fixed_target": 1,
+      "rate": 1.0
+    },
+    {
+      "description": "Ticket purchase - high sampling",
+      "host": "*",
+      "http_method": "POST",
+      "url_path": "/api/tickets/purchase",
+      "fixed_target": 1,
+      "rate": 1.0
+    },
+    {
+      "description": "Authentication - medium sampling",
+      "host": "*",
+      "http_method": "*",
+      "url_path": "/api/auth/*",
+      "fixed_target": 1,
+      "rate": 0.5
+    },
+    {
+      "description": "Default rule - low sampling",
+      "host": "*",
+      "http_method": "*",
+      "url_path": "*",
+      "fixed_target": 1,
+      "rate": 0.1
+    }
+  ],
+  "default": {
+    "fixed_target": 1,
+    "rate": 0.05
+  }
+}

@@ -24,6 +24,8 @@ server:
 spring:
   application:
     name: ticket-service
+  config:
+    import: optional:classpath:application-monitoring.yml
   
   datasource:
     url: jdbc:postgresql://localhost:5434/ticket_service

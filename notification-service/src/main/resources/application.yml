@@ -24,6 +24,8 @@ server:
 spring:
   application:
     name: notification-service
+  config:
+    import: optional:classpath:application-monitoring.yml
   
   datasource:
     url: jdbc:postgresql://localhost:5436/notification_service
