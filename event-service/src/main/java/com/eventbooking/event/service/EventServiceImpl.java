@@ -15,6 +15,9 @@ import com.eventbooking.event.repository.VenueRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -91,23 +94,17 @@ public class EventServiceImpl implements EventService {
     
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "events", key = "#eventId", unless = "#result == null")
     public EventDto getEventById(UUID eventId) {
-        // Check cache first
-        Optional<Event> cachedEvent = cacheService.getCachedEvent(eventId);
-        if (cachedEvent.isPresent()) {
-            return eventMapper.toDto(cachedEvent.get());
-        }
-        
         Event event = eventRepository.findById(eventId)
             .orElseThrow(() -> new EventNotFoundException(eventId));
-        
-        // Cache the event
-        cacheService.cacheEvent(event);
         
         return eventMapper.toDto(event);
     }
     
     @Override
+    @CachePut(value = "events", key = "#eventId")
+    @CacheEvict(value = "searchResults", allEntries = true)
     public EventDto updateEvent(UUID eventId, UpdateEventRequest request, UUID organizerId) {
         Event event = eventRepository.findById(eventId)
             .orElseThrow(() -> new EventNotFoundException(eventId));
@@ -149,13 +146,11 @@ public class EventServiceImpl implements EventService {
         
         Event savedEvent = eventRepository.save(event);
         
-        // Update cache
-        cacheService.cacheEvent(savedEvent);
-        
         return eventMapper.toDto(savedEvent);
     }
     
     @Override
+    @CacheEvict(value = {"events", "searchResults"}, key = "#eventId", allEntries = true)
     public void deleteEvent(UUID eventId, UUID organizerId) {
         Event event = eventRepository.findById(eventId)
             .orElseThrow(() -> new EventNotFoundException(eventId));
@@ -171,9 +166,6 @@ public class EventServiceImpl implements EventService {
         }
         
         eventRepository.delete(event);
-        
-        // Remove from cache
-        cacheService.evictEvent(eventId);
     }
     
     @Override

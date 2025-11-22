@@ -5,6 +5,7 @@ import com.eventbooking.event.entity.EventCategory;
 import com.eventbooking.event.mapper.EventMapper;
 import com.eventbooking.event.repository.EventCategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
     
     @Override
+    @Cacheable(value = "categories", key = "'activeCategories'")
     public List<CategoryDto> getActiveCategories() {
         List<EventCategory> categories = categoryRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
         return categories.stream()
