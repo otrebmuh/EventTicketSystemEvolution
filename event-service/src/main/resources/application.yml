@@ -1,5 +1,25 @@
 server:
   port: 8080
+  # HTTPS configuration (uncomment for production)
+  # ssl:
+  #   enabled: true
+  #   key-store: classpath:keystore.p12
+  #   key-store-password: ${SSL_KEY_STORE_PASSWORD}
+  #   key-store-type: PKCS12
+  #   key-alias: eventbooking
+  # Enforce HTTPS in production
+  forward-headers-strategy: framework
+  # Security settings
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+    include-exception: false
+  # Compression
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+    min-response-size: 1024
 
 spring:
   application:

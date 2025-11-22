@@ -39,6 +39,8 @@ export async function apiRequest<T>(
   
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    // Add custom header to help prevent CSRF attacks
+    'X-Requested-With': 'XMLHttpRequest',
   };
 
   if (token) {
@@ -51,6 +53,8 @@ export async function apiRequest<T>(
       ...headers,
       ...(options.headers as Record<string, string>),
     },
+    // Include credentials for CORS requests
+    credentials: 'include',
   });
 
   return handleResponse<T>(response);
