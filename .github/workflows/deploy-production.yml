@@ -1,0 +1,324 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'prod'
+        type: choice
+        options:
+          - prod
+          - staging
+      version:
+        description: 'Version tag for images'
+        required: true
+        default: 'latest'
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  ENVIRONMENT: ${{ github.event.inputs.environment || 'prod' }}
+  IMAGE_TAG: ${{ github.event.inputs.version || github.sha }}
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+      
+      - name: Build with Maven
+        run: mvn clean package -DskipTests
+      
+      - name: Run unit tests
+        run: mvn test
+      
+      - name: Run integration tests
+        run: mvn verify -P integration-tests
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            **/target/surefire-reports/
+            **/target/failsafe-reports/
+      
+      - name: Cache Maven artifacts
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+  build-images:
+    name: Build and Push Docker Images
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - auth-service
+          - event-service
+          - ticket-service
+          - payment-service
+          - notification-service
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build and push Docker image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: event-booking-${{ matrix.service }}
+        run: |
+          # Create ECR repository if it doesn't exist
+          aws ecr describe-repositories --repository-names ${ECR_REPOSITORY} || \
+            aws ecr create-repository --repository-name ${ECR_REPOSITORY}
+          
+          # Build and push
+          docker buildx build \
+            --platform linux/amd64 \
+            --file ${{ matrix.service }}/Dockerfile.prod \
+            --tag ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} \
+            --tag ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest \
+            --push \
+            .
+      
+      - name: Scan image for vulnerabilities
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: event-booking-${{ matrix.service }}
+        run: |
+          # Trigger ECR image scan
+          aws ecr start-image-scan \
+            --repository-name ${ECR_REPOSITORY} \
+            --image-id imageTag=${IMAGE_TAG} || true
+          
+          # Wait for scan to complete
+          sleep 30
+          
+          # Get scan results
+          aws ecr describe-image-scan-findings \
+            --repository-name ${ECR_REPOSITORY} \
+            --image-id imageTag=${IMAGE_TAG} || true
+
+  deploy-services:
+    name: Deploy Services to ECS
+    needs: build-images
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - auth-service
+          - event-service
+          - ticket-service
+          - payment-service
+          - notification-service
+      max-parallel: 1  # Deploy one service at a time
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+      
+      - name: Deploy service
+        env:
+          SERVICE_NAME: ${{ matrix.service }}
+          CLUSTER_NAME: event-booking-cluster-${{ env.ENVIRONMENT }}
+          PROJECT_NAME: event-booking
+        run: |
+          # Make deployment script executable
+          chmod +x deployment/scripts/deploy-service.sh
+          
+          # Deploy the service
+          cd deployment/scripts
+          ./deploy-service.sh ${SERVICE_NAME} ${IMAGE_TAG} ${ENVIRONMENT}
+      
+      - name: Wait for service stability
+        env:
+          SERVICE_NAME: ${{ matrix.service }}
+          CLUSTER_NAME: event-booking-cluster-${{ env.ENVIRONMENT }}
+        run: |
+          aws ecs wait services-stable \
+            --cluster ${CLUSTER_NAME} \
+            --services event-booking-${SERVICE_NAME} \
+            --region ${AWS_REGION}
+      
+      - name: Verify deployment
+        env:
+          SERVICE_NAME: ${{ matrix.service }}
+          CLUSTER_NAME: event-booking-cluster-${{ env.ENVIRONMENT }}
+        run: |
+          # Get service status
+          SERVICE_STATUS=$(aws ecs describe-services \
+            --cluster ${CLUSTER_NAME} \
+            --services event-booking-${SERVICE_NAME} \
+            --region ${AWS_REGION} \
+            --query 'services[0].{Running:runningCount,Desired:desiredCount}' \
+            --output json)
+          
+          RUNNING=$(echo $SERVICE_STATUS | jq -r '.Running')
+          DESIRED=$(echo $SERVICE_STATUS | jq -r '.Desired')
+          
+          if [ "$RUNNING" != "$DESIRED" ]; then
+            echo "Service deployment verification failed: Running=$RUNNING, Desired=$DESIRED"
+            exit 1
+          fi
+          
+          echo "Service deployed successfully: $RUNNING/$DESIRED tasks running"
+
+  smoke-tests:
+    name: Run Smoke Tests
+    needs: deploy-services
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Get ALB DNS name
+        id: get-alb
+        run: |
+          ALB_DNS=$(aws elbv2 describe-load-balancers \
+            --names event-booking-alb-${ENVIRONMENT} \
+            --region ${AWS_REGION} \
+            --query 'LoadBalancers[0].DNSName' \
+            --output text)
+          echo "alb_dns=${ALB_DNS}" >> $GITHUB_OUTPUT
+      
+      - name: Test Auth Service health
+        run: |
+          curl -f https://${{ steps.get-alb.outputs.alb_dns }}/api/auth/actuator/health || exit 1
+      
+      - name: Test Event Service health
+        run: |
+          curl -f https://${{ steps.get-alb.outputs.alb_dns }}/api/events/actuator/health || exit 1
+      
+      - name: Test Ticket Service health
+        run: |
+          curl -f https://${{ steps.get-alb.outputs.alb_dns }}/api/tickets/actuator/health || exit 1
+      
+      - name: Test Payment Service health
+        run: |
+          curl -f https://${{ steps.get-alb.outputs.alb_dns }}/api/payments/actuator/health || exit 1
+      
+      - name: Test Notification Service health
+        run: |
+          curl -f https://${{ steps.get-alb.outputs.alb_dns }}/api/notifications/actuator/health || exit 1
+      
+      - name: Run API smoke tests
+        run: |
+          # Add more comprehensive smoke tests here
+          echo "All health checks passed!"
+
+  notify:
+    name: Notify Deployment Status
+    needs: [build-and-test, build-images, deploy-services, smoke-tests]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Deployment Success Notification
+        if: ${{ needs.smoke-tests.result == 'success' }}
+        run: |
+          echo "✅ Deployment to ${{ env.ENVIRONMENT }} completed successfully!"
+          echo "Version: ${{ env.IMAGE_TAG }}"
+          echo "Environment: ${{ env.ENVIRONMENT }}"
+      
+      - name: Deployment Failure Notification
+        if: ${{ needs.smoke-tests.result != 'success' }}
+        run: |
+          echo "❌ Deployment to ${{ env.ENVIRONMENT }} failed!"
+          echo "Version: ${{ env.IMAGE_TAG }}"
+          echo "Environment: ${{ env.ENVIRONMENT }}"
+          exit 1
+      
+      # Optional: Send notifications to Slack, email, etc.
+      # - name: Send Slack notification
+      #   uses: 8398a7/action-slack@v3
+      #   with:
+      #     status: ${{ job.status }}
+      #     text: 'Deployment to ${{ env.ENVIRONMENT }} ${{ job.status }}'
+      #     webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+  rollback:
+    name: Rollback on Failure
+    needs: [deploy-services, smoke-tests]
+    runs-on: ubuntu-latest
+    if: failure()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Rollback all services
+        run: |
+          chmod +x deployment/scripts/rollback-service.sh
+          cd deployment/scripts
+          
+          for service in auth-service event-service ticket-service payment-service notification-service; do
+            echo "Rolling back $service..."
+            ./rollback-service.sh $service ${ENVIRONMENT} || true
+          done
+      
+      - name: Verify rollback
+        run: |
+          echo "Rollback completed. Please verify service health manually."
