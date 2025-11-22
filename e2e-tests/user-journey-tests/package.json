@@ -1,0 +1,22 @@
+{
+  "name": "e2e-user-journey-tests",
+  "version": "1.0.0",
+  "description": "End-to-end user journey tests for Event Ticket Booking System",
+  "type": "module",
+  "scripts": {
+    "test": "vitest --run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:report": "vitest --run --reporter=html"
+  },
+  "keywords": ["e2e", "testing", "user-journey"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "vitest": "^1.0.0"
+  }
+}
