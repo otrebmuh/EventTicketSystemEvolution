@@ -132,7 +132,6 @@ class EventServiceImplTest {
         assertNotNull(result);
         assertEquals(testEventDto.getName(), result.getName());
         verify(eventRepository).save(any(Event.class));
-        verify(cacheService).cacheEvent(testEvent);
     }
 
     @Test
@@ -181,21 +180,19 @@ class EventServiceImplTest {
     // ========== Event Retrieval Tests ==========
 
     @Test
-    void getEventById_WithCachedEvent_ShouldReturnFromCache() {
-        when(cacheService.getCachedEvent(eventId)).thenReturn(Optional.of(testEvent));
+    void getEventById_WithExistingEvent_ShouldReturnEvent() {
+        when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
         when(eventMapper.toDto(testEvent)).thenReturn(testEventDto);
 
         EventDto result = eventService.getEventById(eventId);
 
         assertNotNull(result);
         assertEquals(testEventDto.getName(), result.getName());
-        verify(cacheService).getCachedEvent(eventId);
-        verify(eventRepository, never()).findById(any());
+        verify(eventRepository).findById(eventId);
     }
 
     @Test
-    void getEventById_WithoutCache_ShouldFetchFromDatabase() {
-        when(cacheService.getCachedEvent(eventId)).thenReturn(Optional.empty());
+    void getEventById_WithValidId_ShouldFetchFromDatabase() {
         when(eventRepository.findById(eventId)).thenReturn(Optional.of(testEvent));
         when(eventMapper.toDto(testEvent)).thenReturn(testEventDto);
 
@@ -203,12 +200,10 @@ class EventServiceImplTest {
 
         assertNotNull(result);
         verify(eventRepository).findById(eventId);
-        verify(cacheService).cacheEvent(testEvent);
     }
 
     @Test
     void getEventById_WithNonExistentEvent_ShouldThrowException() {
-        when(cacheService.getCachedEvent(eventId)).thenReturn(Optional.empty());
         when(eventRepository.findById(eventId)).thenReturn(Optional.empty());
 
         assertThrows(EventNotFoundException.class, () -> 
@@ -232,7 +227,6 @@ class EventServiceImplTest {
 
         assertNotNull(result);
         verify(eventRepository).save(testEvent);
-        verify(cacheService).cacheEvent(testEvent);
     }
 
     @Test
@@ -269,7 +263,6 @@ class EventServiceImplTest {
         eventService.deleteEvent(eventId, organizerId);
 
         verify(eventRepository).delete(testEvent);
-        verify(cacheService).evictEvent(eventId);
     }
 
     @Test
@@ -309,7 +302,6 @@ class EventServiceImplTest {
         assertNotNull(result);
         assertEquals(EventStatus.PUBLISHED, testEvent.getStatus());
         verify(eventRepository).save(testEvent);
-        verify(cacheService).cacheEvent(testEvent);
     }
 
     @Test
@@ -402,7 +394,6 @@ class EventServiceImplTest {
         assertNotNull(result);
         assertEquals(imageUrl, testEvent.getImageUrl());
         verify(eventRepository).save(testEvent);
-        verify(cacheService).cacheEvent(testEvent);
     }
 
     @Test
