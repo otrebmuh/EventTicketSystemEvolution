@@ -73,6 +73,10 @@ services:
   notification:
     url: ${NOTIFICATION_SERVICE_URL:http://localhost:8084}
 
+jwt:
+  secret: ${JWT_SECRET:ThisIsAStrongSecretKeyForEventBookingSystem2025!}
+  expiration: 86400000
+
 resilience4j:
   circuitbreaker:
     instances:
@@ -126,11 +130,13 @@ aws:
   access-key-id: ${AWS_ACCESS_KEY_ID:}
   secret-access-key: ${AWS_SECRET_ACCESS_KEY:}
   sqs:
-    endpoint: ${AWS_SQS_ENDPOINT:}
+    # Use AWS_ENDPOINT_OVERRIDE for local (LocalStack), leave empty for production (real AWS)
+    endpoint: ${AWS_ENDPOINT_OVERRIDE:}
     payment-events-queue: ${AWS_SQS_PAYMENT_EVENTS_QUEUE:payment-events-queue}
     payment-events-dlq: ${AWS_SQS_PAYMENT_EVENTS_DLQ:payment-events-dlq}
   sns:
-    endpoint: ${AWS_SNS_ENDPOINT:}
+    # Use AWS_ENDPOINT_OVERRIDE for local (LocalStack), leave empty for production (real AWS)
+    endpoint: ${AWS_ENDPOINT_OVERRIDE:}
     payment-events-topic: ${AWS_SNS_PAYMENT_EVENTS_TOPIC:arn:aws:sns:us-east-1:000000000000:payment-events}
 
 ---
@@ -151,3 +157,7 @@ services:
     url: http://ticket-service:8082
   notification:
     url: http://notification-service:8084
+
+jwt:
+  secret: ${JWT_SECRET:ThisIsAStrongSecretKeyForEventBookingSystem2025!}
+  expiration: 86400000

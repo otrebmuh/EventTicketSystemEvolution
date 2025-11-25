@@ -100,9 +100,12 @@ export const paymentService = {
   },
 
   // Purchase tickets using saga pattern
-  async purchaseTickets(request: TicketPurchaseRequest): Promise<TicketPurchaseResponse> {
+  async purchaseTickets(request: TicketPurchaseRequest, userId: string): Promise<TicketPurchaseResponse> {
     return apiRequest<TicketPurchaseResponse>('/payments/purchase-tickets', {
       method: 'POST',
+      headers: {
+        'X-User-Id': userId,
+      },
       body: JSON.stringify(request),
     });
   },
@@ -116,10 +119,10 @@ export const paymentService = {
 
   // Confirm order
   async confirmOrder(orderId: string, paymentIntentId?: string): Promise<Order> {
-    const url = paymentIntentId 
+    const url = paymentIntentId
       ? `/payments/orders/${orderId}/confirm?paymentIntentId=${paymentIntentId}`
       : `/payments/orders/${orderId}/confirm`;
-    
+
     return apiRequest<Order>(url, {
       method: 'POST',
     });

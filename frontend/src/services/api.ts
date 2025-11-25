@@ -10,6 +10,14 @@ export interface ApiError {
   }>;
 }
 
+// Backend wraps all responses in this format
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+  timestamp: string | number[];
+}
+
 export class ApiException extends Error {
   constructor(
     public statusCode: number,
@@ -28,7 +36,15 @@ async function handleResponse<T>(response: Response): Promise<T> {
     }));
     throw new ApiException(response.status, errorData.error || errorData);
   }
-  return response.json();
+
+  const responseData = await response.json();
+
+  // Backend wraps responses in ApiResponse<T>, extract the data field
+  if (responseData && typeof responseData === 'object' && 'data' in responseData) {
+    return responseData.data as T;
+  }
+
+  return responseData;
 }
 
 export async function apiRequest<T>(
@@ -36,7 +52,7 @@ export async function apiRequest<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const token = localStorage.getItem('token');
-  
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     // Add custom header to help prevent CSRF attacks

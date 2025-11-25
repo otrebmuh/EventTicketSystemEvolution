@@ -65,6 +65,10 @@ const eventSlice = createSlice({
       state.loading = false
       state.error = action.payload
     },
+    fetchEventDetailsSuccess: (state) => {
+      state.loading = false
+      state.error = null
+    },
     setSelectedEvent: (state, action: PayloadAction<Event | null>) => {
       state.selectedEvent = action.payload
     },
@@ -95,6 +99,7 @@ const eventSlice = createSlice({
 export const {
   fetchEventsStart,
   fetchEventsSuccess,
+  fetchEventDetailsSuccess,
   fetchEventsFailure,
   setSelectedEvent,
   setTicketTypes,

@@ -41,7 +41,7 @@ const RegisterPage = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    
+
     // Clear validation error when user starts typing
     if (validationErrors[name]) {
       setValidationErrors((prev) => {
@@ -113,7 +113,7 @@ const RegisterPage = () => {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+
     // Mark all fields as touched
     setTouched({
       firstName: true,
@@ -128,8 +128,8 @@ const RegisterPage = () => {
       return;
     }
 
-    const { confirmPassword, ...registrationData } = formData;
-    dispatch(registerUser(registrationData));
+    // Send all form data including confirmPassword for backend validation
+    dispatch(registerUser(formData));
   };
 
   const getInputClassName = (field: string) => {
@@ -144,7 +144,7 @@ const RegisterPage = () => {
     <div className="container mx-auto px-4 py-16">
       <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-8">
         <h1 className="text-3xl font-bold text-center mb-8">Create Account</h1>
-        
+
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-800 text-sm">{error}</p>
@@ -156,7 +156,7 @@ const RegisterPage = () => {
             <p className="text-green-800 text-sm">{successMessage}</p>
           </div>
         )}
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -177,7 +177,7 @@ const RegisterPage = () => {
                 <p className="text-red-500 text-xs mt-1">{validationErrors.firstName}</p>
               )}
             </div>
-            
+
             <div>
               <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
                 Last Name
@@ -197,7 +197,7 @@ const RegisterPage = () => {
               )}
             </div>
           </div>
-          
+
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
               Email Address
@@ -216,7 +216,7 @@ const RegisterPage = () => {
               <p className="text-red-500 text-xs mt-1">{validationErrors.email}</p>
             )}
           </div>
-          
+
           <div>
             <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 mb-2">
               Date of Birth
@@ -234,7 +234,7 @@ const RegisterPage = () => {
               <p className="text-red-500 text-xs mt-1">{validationErrors.dateOfBirth}</p>
             )}
           </div>
-          
+
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
               Password
@@ -256,7 +256,7 @@ const RegisterPage = () => {
               <p className="text-red-500 text-xs mt-1">{validationErrors.password}</p>
             )}
           </div>
-          
+
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
               Confirm Password
@@ -275,7 +275,7 @@ const RegisterPage = () => {
               <p className="text-red-500 text-xs mt-1">{validationErrors.confirmPassword}</p>
             )}
           </div>
-          
+
           <button
             type="submit"
             disabled={loading}
@@ -284,7 +284,7 @@ const RegisterPage = () => {
             {loading ? 'Registering...' : 'Register'}
           </button>
         </form>
-        
+
         <p className="text-center mt-6 text-gray-600">
           Already have an account?{' '}
           <Link to="/login" className="text-blue-600 hover:text-blue-700 font-semibold">

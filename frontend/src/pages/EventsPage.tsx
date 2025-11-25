@@ -304,14 +304,14 @@ const EventsPage = () => {
                     </div>
                   )}
                   <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded text-xs font-semibold text-gray-700">
-                    {event.category}
+                    {event.category?.name || 'Uncategorized'}
                   </div>
                 </div>
                 <div className="p-4">
                   <h3 className="text-xl font-semibold mb-2 line-clamp-2">{event.name}</h3>
                   <p className="text-gray-600 mb-1 flex items-center gap-1">
                     <span>📍</span>
-                    {event.venueName}
+                    {event.venue?.name || 'Unknown Venue'}
                   </p>
                   <p className="text-gray-500 text-sm mb-3 flex items-center gap-1">
                     <span>📅</span>
@@ -352,11 +352,10 @@ const EventsPage = () => {
                     <button
                       key={pageNum}
                       onClick={() => handlePageChange(pageNum)}
-                      className={`px-4 py-2 border rounded-lg ${
-                        pagination.page === pageNum
+                      className={`px-4 py-2 border rounded-lg ${pagination.page === pageNum
                           ? 'bg-blue-600 text-white border-blue-600'
                           : 'border-gray-300 hover:bg-gray-50'
-                      }`}
+                        }`}
                     >
                       {pageNum + 1}
                     </button>

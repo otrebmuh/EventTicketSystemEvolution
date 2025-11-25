@@ -7,7 +7,7 @@ import authReducer, {
   clearSuccessMessage,
   setToken,
 } from './authSlice';
-import { authService } from '../../services/authService';
+
 
 vi.mock('../../services/authService');
 

@@ -31,14 +31,14 @@ import java.util.UUID;
 @Service
 @Transactional
 public class EventServiceImpl implements EventService {
-    
+
     private final EventRepository eventRepository;
     private final EventCategoryRepository categoryRepository;
     private final VenueRepository venueRepository;
     private final EventMapper eventMapper;
     private final CacheService cacheService;
     private final ObjectMapper objectMapper;
-    
+
     @Autowired
     public EventServiceImpl(
             EventRepository eventRepository,
@@ -54,16 +54,16 @@ public class EventServiceImpl implements EventService {
         this.cacheService = cacheService;
         this.objectMapper = objectMapper;
     }
-    
+
     @Override
     public EventDto createEvent(CreateEventRequest request, UUID organizerId) {
         // Validate category exists
         EventCategory category = categoryRepository.findById(request.getCategoryId())
-            .orElseThrow(() -> new InvalidEventDataException("Category not found"));
-        
+                .orElseThrow(() -> new InvalidEventDataException("Category not found"));
+
         // Create or find venue
         Venue venue = createOrFindVenue(request.getVenue());
-        
+
         // Create event
         Event event = new Event();
         event.setOrganizerId(organizerId);
@@ -74,7 +74,7 @@ public class EventServiceImpl implements EventService {
         event.setCategory(category);
         event.setMaxCapacity(request.getMaxCapacity());
         event.setStatus(EventStatus.DRAFT);
-        
+
         // Convert tags to JSON
         if (request.getTags() != null && !request.getTags().isEmpty()) {
             try {
@@ -83,37 +83,37 @@ public class EventServiceImpl implements EventService {
                 throw new InvalidEventDataException("Invalid tags format");
             }
         }
-        
+
         Event savedEvent = eventRepository.save(event);
-        
+
         // Cache the event
-        cacheService.cacheEvent(savedEvent);
-        
+        // cacheService.cacheEvent(savedEvent);
+
         return eventMapper.toDto(savedEvent);
     }
-    
+
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "events", key = "#eventId", unless = "#result == null")
+    @Cacheable(value = "events", key = "#p0", unless = "#result == null")
     public EventDto getEventById(UUID eventId) {
         Event event = eventRepository.findById(eventId)
-            .orElseThrow(() -> new EventNotFoundException(eventId));
-        
+                .orElseThrow(() -> new EventNotFoundException(eventId));
+
         return eventMapper.toDto(event);
     }
-    
+
     @Override
-    @CachePut(value = "events", key = "#eventId")
+    @CachePut(value = "events", key = "#p0")
     @CacheEvict(value = "searchResults", allEntries = true)
     public EventDto updateEvent(UUID eventId, UpdateEventRequest request, UUID organizerId) {
         Event event = eventRepository.findById(eventId)
-            .orElseThrow(() -> new EventNotFoundException(eventId));
-        
+                .orElseThrow(() -> new EventNotFoundException(eventId));
+
         // Check if user is the organizer
         if (!event.getOrganizerId().equals(organizerId)) {
             throw new EventAccessDeniedException("Not authorized to update this event");
         }
-        
+
         // Update fields if provided
         if (request.getName() != null) {
             event.setName(request.getName());
@@ -130,7 +130,7 @@ public class EventServiceImpl implements EventService {
         }
         if (request.getCategoryId() != null) {
             EventCategory category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new InvalidEventDataException("Category not found"));
+                    .orElseThrow(() -> new InvalidEventDataException("Category not found"));
             event.setCategory(category);
         }
         if (request.getMaxCapacity() != null) {
@@ -143,136 +143,139 @@ public class EventServiceImpl implements EventService {
                 throw new InvalidEventDataException("Invalid tags format");
             }
         }
-        
+
         Event savedEvent = eventRepository.save(event);
-        
+
         return eventMapper.toDto(savedEvent);
     }
-    
+
     @Override
-    @CacheEvict(value = {"events", "searchResults"}, key = "#eventId", allEntries = true)
+    @CacheEvict(value = { "events", "searchResults" }, key = "#p0", allEntries = true)
     public void deleteEvent(UUID eventId, UUID organizerId) {
         Event event = eventRepository.findById(eventId)
-            .orElseThrow(() -> new EventNotFoundException(eventId));
-        
+                .orElseThrow(() -> new EventNotFoundException(eventId));
+
         // Check if user is the organizer
         if (!event.getOrganizerId().equals(organizerId)) {
             throw new EventAccessDeniedException("Not authorized to delete this event");
         }
-        
+
         // Only allow deletion of draft events
         if (event.getStatus() != EventStatus.DRAFT) {
             throw new InvalidEventDataException("Only draft events can be deleted");
         }
-        
+
         eventRepository.delete(event);
     }
-    
+
     @Override
     @Transactional(readOnly = true)
     public Page<EventDto> getEventsByOrganizer(UUID organizerId, Pageable pageable) {
         Page<Event> events = eventRepository.findByOrganizerId(organizerId, pageable);
         return events.map(eventMapper::toDto);
     }
-    
+
     @Override
     @Transactional(readOnly = true)
     public Page<EventDto> getPublishedEvents(Pageable pageable) {
         Page<Event> events = eventRepository.findByStatus(EventStatus.PUBLISHED, pageable);
         return events.map(eventMapper::toDto);
     }
-    
+
     @Override
     @Transactional(readOnly = true)
     public Page<EventDto> getUpcomingEvents(Pageable pageable) {
         Page<Event> events = eventRepository.findUpcomingEvents(LocalDateTime.now(), pageable);
         return events.map(eventMapper::toDto);
     }
-    
+
     @Override
+    @CachePut(value = "events", key = "#p0")
     public EventDto publishEvent(UUID eventId, UUID organizerId) {
         Event event = eventRepository.findById(eventId)
-            .orElseThrow(() -> new EventNotFoundException(eventId));
-        
+                .orElseThrow(() -> new EventNotFoundException(eventId));
+
         // Check if user is the organizer
         if (!event.getOrganizerId().equals(organizerId)) {
             throw new EventAccessDeniedException("Not authorized to publish this event");
         }
-        
+
         // Validate event is ready for publishing
         if (event.getStatus() != EventStatus.DRAFT) {
             throw new InvalidEventDataException("Only draft events can be published");
         }
-        
+
         event.setStatus(EventStatus.PUBLISHED);
         Event savedEvent = eventRepository.save(event);
-        
+
         // Update cache
-        cacheService.cacheEvent(savedEvent);
-        
+        // cacheService.cacheEvent(savedEvent);
+
         // TODO: Publish event to SNS for notifications
-        
+
         return eventMapper.toDto(savedEvent);
     }
-    
+
     @Override
+    @CachePut(value = "events", key = "#p0")
     public EventDto cancelEvent(UUID eventId, UUID organizerId) {
         Event event = eventRepository.findById(eventId)
-            .orElseThrow(() -> new EventNotFoundException(eventId));
-        
+                .orElseThrow(() -> new EventNotFoundException(eventId));
+
         // Check if user is the organizer
         if (!event.getOrganizerId().equals(organizerId)) {
             throw new EventAccessDeniedException("Not authorized to cancel this event");
         }
-        
+
         event.setStatus(EventStatus.CANCELLED);
         Event savedEvent = eventRepository.save(event);
-        
+
         // Update cache
-        cacheService.cacheEvent(savedEvent);
-        
+        // cacheService.cacheEvent(savedEvent);
+
         // TODO: Publish cancellation event to SNS for notifications
-        
+
         return eventMapper.toDto(savedEvent);
     }
-    
+
     @Override
+    @CachePut(value = "events", key = "#p0")
     public EventDto updateEventImage(UUID eventId, String imageUrl, UUID organizerId) {
         Event event = eventRepository.findById(eventId)
-            .orElseThrow(() -> new EventNotFoundException(eventId));
-        
+                .orElseThrow(() -> new EventNotFoundException(eventId));
+
         // Check if user is the organizer
         if (!event.getOrganizerId().equals(organizerId)) {
             throw new EventAccessDeniedException("Not authorized to update this event");
         }
-        
+
         event.setImageUrl(imageUrl);
         Event savedEvent = eventRepository.save(event);
-        
+
         // Update cache
         cacheService.cacheEvent(savedEvent);
-        
+
         return eventMapper.toDto(savedEvent);
     }
-    
+
     @Override
     @Transactional(readOnly = true)
     public EventDto getEventForTicketService(UUID eventId) {
         Event event = eventRepository.findById(eventId)
-            .orElseThrow(() -> new EventNotFoundException(eventId));
-        
+                .orElseThrow(() -> new EventNotFoundException(eventId));
+
         return eventMapper.toDto(event);
     }
-    
+
     private Venue createOrFindVenue(VenueRequest venueRequest) {
         // Try to find existing venue by name and city
         Optional<Venue> existingVenue = venueRepository
-            .findByNameIgnoreCaseAndCityIgnoreCase(venueRequest.getName(), venueRequest.getCity());
-        
+                .findByNameIgnoreCaseAndCityIgnoreCase(venueRequest.getName(), venueRequest.getCity());
+
         if (existingVenue.isPresent()) {
             return existingVenue.get();
         }
-        
+
         // Create new venue
         Venue venue = new Venue();
         venue.setName(venueRequest.getName());
@@ -285,7 +288,7 @@ public class EventServiceImpl implements EventService {
         venue.setLongitude(venueRequest.getLongitude());
         venue.setMaxCapacity(venueRequest.getMaxCapacity());
         venue.setVenueType(venueRequest.getVenueType());
-        
+
         return venueRepository.save(venue);
     }
 }

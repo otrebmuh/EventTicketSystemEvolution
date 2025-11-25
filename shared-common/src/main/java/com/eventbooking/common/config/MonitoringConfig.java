@@ -1,11 +1,12 @@
 package com.eventbooking.common.config;
 
-import com.amazonaws.xray.AWSXRay;
-import com.amazonaws.xray.AWSXRayRecorderBuilder;
-import com.amazonaws.xray.jakarta.servlet.AWSXRayServletFilter;
-import com.amazonaws.xray.plugins.EC2Plugin;
-import com.amazonaws.xray.plugins.ECSPlugin;
-import com.amazonaws.xray.strategy.sampling.LocalizedSamplingStrategy;
+// X-Ray imports disabled for local development
+// import com.amazonaws.xray.AWSXRay;
+// import com.amazonaws.xray.AWSXRayRecorderBuilder;
+// import com.amazonaws.xray.jakarta.servlet.AWSXRayServletFilter;
+// import com.amazonaws.xray.plugins.EC2Plugin;
+// import com.amazonaws.xray.plugins.ECSPlugin;
+// import com.amazonaws.xray.strategy.sampling.LocalizedSamplingStrategy;
 import io.micrometer.cloudwatch2.CloudWatchConfig;
 import io.micrometer.cloudwatch2.CloudWatchMeterRegistry;
 import io.micrometer.core.instrument.Clock;
@@ -57,8 +58,8 @@ public class MonitoringConfig {
 
         CloudWatchConfig cloudWatchConfig = new CloudWatchConfig() {
             private final Map<String, String> configuration = Map.of(
-                "cloudwatch.namespace", cloudWatchNamespace,
-                "cloudwatch.step", "PT1M" // 1 minute step
+                    "cloudwatch.namespace", cloudWatchNamespace,
+                    "cloudwatch.step", "PT1M" // 1 minute step
             );
 
             @Override
@@ -78,9 +79,9 @@ public class MonitoringConfig {
         };
 
         CloudWatchAsyncClient cloudWatchAsyncClient = CloudWatchAsyncClient
-            .builder()
-            .region(Region.of(awsRegion))
-            .build();
+                .builder()
+                .region(Region.of(awsRegion))
+                .build();
 
         return new CloudWatchMeterRegistry(cloudWatchConfig, Clock.SYSTEM, cloudWatchAsyncClient);
     }
@@ -91,37 +92,51 @@ public class MonitoringConfig {
     @Bean
     public MeterRegistryCustomizer<MeterRegistry> metricsCommonTags() {
         return registry -> registry.config()
-            .commonTags(
-                "application", applicationName,
-                "environment", System.getProperty("spring.profiles.active", "default")
-            );
+                .commonTags(
+                        "application", applicationName,
+                        "environment", System.getProperty("spring.profiles.active", "default"));
     }
 
     /**
      * Configure AWS X-Ray for distributed tracing
+     * DISABLED FOR LOCAL DEVELOPMENT - Uncomment when deploying to AWS
      */
     @Bean
     @Profile("!test")
     public Filter tracingFilter() {
-        if (!xrayEnabled) {
-            return (request, response, chain) -> chain.doFilter(request, response);
-        }
-
-        // Configure X-Ray recorder
-        AWSXRayRecorderBuilder builder = AWSXRayRecorderBuilder.standard()
-            .withPlugin(new EC2Plugin())
-            .withPlugin(new ECSPlugin());
-
-        // Load sampling rules from classpath if available
-        URL samplingRules = getClass().getClassLoader().getResource("xray-sampling-rules.json");
-        if (samplingRules != null) {
-            builder.withSamplingStrategy(new LocalizedSamplingStrategy(samplingRules));
-        }
-
-        AWSXRay.setGlobalRecorder(builder.build());
-
-        return new AWSXRayServletFilter("EventBookingSystem");
+        // X-Ray disabled for local development to avoid dependency conflicts
+        // Re-enable this when deploying to AWS with proper X-Ray daemon
+        return (request, response, chain) -> chain.doFilter(request, response);
     }
+
+    /*
+     * X-Ray configuration commented out for local development
+     * 
+     * @Bean
+     * 
+     * @Profile("!test")
+     * public Filter tracingFilter() {
+     * if (!xrayEnabled) {
+     * return (request, response, chain) -> chain.doFilter(request, response);
+     * }
+     * 
+     * // Configure X-Ray recorder
+     * AWSXRayRecorderBuilder builder = AWSXRayRecorderBuilder.standard()
+     * .withPlugin(new EC2Plugin())
+     * .withPlugin(new ECSPlugin());
+     * 
+     * // Load sampling rules from classpath if available
+     * URL samplingRules =
+     * getClass().getClassLoader().getResource("xray-sampling-rules.json");
+     * if (samplingRules != null) {
+     * builder.withSamplingStrategy(new LocalizedSamplingStrategy(samplingRules));
+     * }
+     * 
+     * AWSXRay.setGlobalRecorder(builder.build());
+     * 
+     * return new AWSXRayServletFilter("EventBookingSystem");
+     * }
+     */
 
     /**
      * Custom metrics for business operations
@@ -160,32 +175,32 @@ public class MonitoringConfig {
 
         public void recordPaymentProcessing(boolean success, String paymentMethod) {
             registry.counter("payment.processing.total",
-                "success", String.valueOf(success),
-                "method", paymentMethod).increment();
+                    "success", String.valueOf(success),
+                    "method", paymentMethod).increment();
         }
 
         public void recordNotificationSent(String type, boolean success) {
             registry.counter("notification.sent.total",
-                "type", type,
-                "success", String.valueOf(success)).increment();
+                    "type", type,
+                    "success", String.valueOf(success)).increment();
         }
 
         public void recordApiCall(String endpoint, int statusCode, long durationMs) {
             registry.counter("api.calls.total",
-                "endpoint", endpoint,
-                "status", String.valueOf(statusCode)).increment();
+                    "endpoint", endpoint,
+                    "status", String.valueOf(statusCode)).increment();
             registry.timer("api.response.time",
-                "endpoint", endpoint).record(Duration.ofMillis(durationMs));
+                    "endpoint", endpoint).record(Duration.ofMillis(durationMs));
         }
 
         public void recordDatabaseQuery(String operation, long durationMs) {
             registry.timer("database.query.time",
-                "operation", operation).record(Duration.ofMillis(durationMs));
+                    "operation", operation).record(Duration.ofMillis(durationMs));
         }
 
         public void recordCacheHit(boolean hit) {
             registry.counter("cache.access.total",
-                "hit", String.valueOf(hit)).increment();
+                    "hit", String.valueOf(hit)).increment();
         }
     }
 }

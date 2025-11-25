@@ -7,7 +7,7 @@
 
     <parent>
         <groupId>com.eventbooking</groupId>
-        <artifactId>event-ticket-booking-system</artifactId>
+        <artifactId>event-ticket-system-evolution</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
@@ -52,7 +52,9 @@
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-cloudwatch2</artifactId>
         </dependency>
-        <!-- AWS X-Ray for Distributed Tracing -->
+        <!-- AWS X-Ray for Distributed Tracing - DISABLED FOR LOCAL DEVELOPMENT -->
+        <!-- Uncomment these when deploying to AWS with proper X-Ray configuration -->
+        <!--
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-xray-recorder-sdk-spring</artifactId>
@@ -68,6 +70,7 @@
             <artifactId>aws-xray-recorder-sdk-sql-postgres</artifactId>
             <version>2.15.1</version>
         </dependency>
+        -->
         <!-- CloudWatch Logs -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>

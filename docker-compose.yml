@@ -17,7 +17,28 @@ services:
     networks:
       - event-booking-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U auth_user -d auth_service"]
+      test: [ "CMD-SHELL", "pg_isready -U auth_user -d auth_service" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # LocalStack for local AWS services emulation (SQS, CloudWatch, etc.)
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
+    ports:
+      - "4566:4566" # LocalStack gateway
+      - "4571:4571" # Legacy SQS port (optional)
+    environment:
+      - SERVICES=sqs,cloudwatch,logs
+      - DEBUG=1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - event-booking-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:4566/_localstack/health" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -37,7 +58,7 @@ services:
     networks:
       - event-booking-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U event_user -d event_service"]
+      test: [ "CMD-SHELL", "pg_isready -U event_user -d event_service" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -57,7 +78,7 @@ services:
     networks:
       - event-booking-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ticket_user -d ticket_service"]
+      test: [ "CMD-SHELL", "pg_isready -U ticket_user -d ticket_service" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -77,7 +98,7 @@ services:
     networks:
       - event-booking-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U payment_user -d payment_service"]
+      test: [ "CMD-SHELL", "pg_isready -U payment_user -d payment_service" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -97,7 +118,7 @@ services:
     networks:
       - event-booking-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U notification_user -d notification_service"]
+      test: [ "CMD-SHELL", "pg_isready -U notification_user -d notification_service" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -114,7 +135,7 @@ services:
       - event-booking-network
     command: redis-server --appendonly yes
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -137,6 +158,8 @@ services:
       EVENT_SERVICE_URL: http://event-service:8080
       TICKET_SERVICE_URL: http://ticket-service:8080
       PAYMENT_SERVICE_URL: http://payment-service:8080
+      MONITORING_CLOUDWATCH_ENABLED: "false"
+      JWT_SECRET: "ThisIsAStrongSecretKeyForEventBookingSystem2025"
     depends_on:
       auth-db:
         condition: service_healthy
@@ -161,6 +184,8 @@ services:
       SPRING_REDIS_HOST: redis-cache
       SPRING_REDIS_PORT: 6379
       AUTH_SERVICE_URL: http://auth-service:8080
+      MONITORING_CLOUDWATCH_ENABLED: "false"
+      JWT_SECRET: "ThisIsAStrongSecretKeyForEventBookingSystem2025"
     depends_on:
       event-db:
         condition: service_healthy
@@ -188,6 +213,8 @@ services:
       SPRING_REDIS_PORT: 6379
       AUTH_SERVICE_URL: http://auth-service:8080
       EVENT_SERVICE_URL: http://event-service:8080
+      MONITORING_CLOUDWATCH_ENABLED: "false"
+      JWT_SECRET: "ThisIsAStrongSecretKeyForEventBookingSystem2025"
     depends_on:
       ticket-db:
         condition: service_healthy
@@ -215,10 +242,25 @@ services:
       SPRING_DATASOURCE_PASSWORD: payment_password
       AUTH_SERVICE_URL: http://auth-service:8080
       TICKET_SERVICE_URL: http://ticket-service:8080
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_placeholder}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_placeholderhere}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_placeholder}
+      MONITORING_CLOUDWATCH_ENABLED: "false"
+      # AWS Configuration - uses LocalStack for local, real AWS for production
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      # LocalStack endpoint - leave empty for production AWS
+      AWS_ENDPOINT_OVERRIDE: ${AWS_ENDPOINT_OVERRIDE:-http://localstack:4566}
+      # Disable AWS SDK's HTTPS requirement for LocalStack
+      AWS_CBOR_DISABLE: "true"
+      # SQS Queue URLs for LocalStack
+      AWS_SQS_PAYMENT_EVENTS_QUEUE: ${AWS_SQS_PAYMENT_EVENTS_QUEUE:-http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/payment-events-queue}
+      AWS_SQS_PAYMENT_EVENTS_DLQ: ${AWS_SQS_PAYMENT_EVENTS_DLQ:-http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/payment-events-dlq}
+      JWT_SECRET: "ThisIsAStrongSecretKeyForEventBookingSystem2025!"
     depends_on:
       payment-db:
+        condition: service_healthy
+      localstack:
         condition: service_healthy
       auth-service:
         condition: service_started
@@ -244,6 +286,8 @@ services:
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USERNAME: ${SMTP_USERNAME:-your-email@gmail.com}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-your-app-password}
+      MONITORING_CLOUDWATCH_ENABLED: "false"
+      JWT_SECRET: "ThisIsAStrongSecretKeyForEventBookingSystem2025!"
     depends_on:
       notification-db:
         condition: service_healthy
@@ -258,6 +302,8 @@ volumes:
   payment_db_data:
   notification_db_data:
   redis_data:
+  localstack_data:
+
 
 networks:
   event-booking-network:

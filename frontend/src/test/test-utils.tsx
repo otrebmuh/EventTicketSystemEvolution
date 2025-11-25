@@ -2,7 +2,7 @@ import { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
-import { configureStore, PreloadedState } from '@reduxjs/toolkit';
+import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../store/slices/authSlice';
 import eventReducer from '../store/slices/eventSlice';
 import orderReducer from '../store/slices/orderSlice';
@@ -10,7 +10,7 @@ import ticketReducer from '../store/slices/ticketSlice';
 import { RootState } from '../store/store';
 
 interface ExtendedRenderOptions extends Omit<RenderOptions, 'queries'> {
-  preloadedState?: PreloadedState<RootState>;
+  preloadedState?: Partial<RootState>;
   store?: ReturnType<typeof configureStore>;
 }
 
@@ -20,10 +20,10 @@ export function renderWithProviders(
     preloadedState = {},
     store = configureStore({
       reducer: {
-        auth: authReducer,
-        events: eventReducer,
-        orders: orderReducer,
-        tickets: ticketReducer,
+        auth: authReducer as any,
+        event: eventReducer as any,
+        order: orderReducer as any,
+        ticket: ticketReducer as any,
       },
       preloadedState,
     }),

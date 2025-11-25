@@ -7,8 +7,32 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      '/api': {
-        target: 'http://localhost:8080',
+      '/api/auth': {
+        target: 'http://localhost:8091',
+        changeOrigin: true,
+      },
+      '/api/events': {
+        target: 'http://localhost:8092',
+        changeOrigin: true,
+      },
+      '/api/categories': {
+        target: 'http://localhost:8092',
+        changeOrigin: true,
+      },
+      '/api/tickets': {
+        target: 'http://localhost:8093',
+        changeOrigin: true,
+      },
+      '/api/ticket-types': {
+        target: 'http://localhost:8093',
+        changeOrigin: true,
+      },
+      '/api/payments': {
+        target: 'http://localhost:8094',
+        changeOrigin: true,
+      },
+      '/api/notifications': {
+        target: 'http://localhost:8095',
         changeOrigin: true,
       },
     },

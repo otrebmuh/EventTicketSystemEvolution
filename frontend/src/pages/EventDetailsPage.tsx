@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
   fetchEventsStart,
+  fetchEventDetailsSuccess,
   fetchEventsFailure,
   setSelectedEvent,
   setTicketTypes,
@@ -30,6 +31,7 @@ const EventDetailsPage = () => {
 
         const tickets = await eventService.getTicketTypes(id);
         dispatch(setTicketTypes(tickets));
+        dispatch(fetchEventDetailsSuccess());
       } catch (err: any) {
         dispatch(fetchEventsFailure(err.message || 'Failed to load event details'));
       }
@@ -86,7 +88,7 @@ const EventDetailsPage = () => {
         eventId: selectedEvent.id,
         eventName: selectedEvent.name,
         eventDate: selectedEvent.eventDate,
-        venueName: selectedEvent.venueName,
+        venueName: selectedEvent.venue?.name || 'Unknown Venue',
         selectedTickets: selectedTicketsList,
       },
     });
@@ -112,8 +114,12 @@ const EventDetailsPage = () => {
 
   const isTicketAvailable = (ticketType: TicketType) => {
     const now = new Date();
-    const saleStart = ticketType.saleStartDate ? new Date(ticketType.saleStartDate) : null;
-    const saleEnd = ticketType.saleEndDate ? new Date(ticketType.saleEndDate) : null;
+    const saleStart = ticketType.saleStartDate
+      ? new Date(ticketType.saleStartDate.endsWith('Z') ? ticketType.saleStartDate : ticketType.saleStartDate + 'Z')
+      : null;
+    const saleEnd = ticketType.saleEndDate
+      ? new Date(ticketType.saleEndDate.endsWith('Z') ? ticketType.saleEndDate : ticketType.saleEndDate + 'Z')
+      : null;
 
     if (saleStart && now < saleStart) return false;
     if (saleEnd && now > saleEnd) return false;
@@ -168,7 +174,7 @@ const EventDetailsPage = () => {
             </div>
           )}
           <div className="absolute top-4 right-4 bg-white px-3 py-1 rounded-lg text-sm font-semibold text-gray-700">
-            {selectedEvent.category}
+            {selectedEvent.category?.name || 'Uncategorized'}
           </div>
         </div>
 
@@ -194,15 +200,15 @@ const EventDetailsPage = () => {
                     <span className="text-2xl">📍</span>
                     <div>
                       <p className="font-semibold">Venue</p>
-                      <p>{selectedEvent.venueName}</p>
-                      <p className="text-sm text-gray-600">{selectedEvent.venueAddress}</p>
+                      <p>{selectedEvent.venue?.name || 'Unknown Venue'}</p>
+                      <p className="text-sm text-gray-600">{selectedEvent.venue?.address || ''}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <span className="text-2xl">🎭</span>
                     <div>
                       <p className="font-semibold">Category</p>
-                      <p>{selectedEvent.category}</p>
+                      <p>{selectedEvent.category?.name || 'Uncategorized'}</p>
                     </div>
                   </div>
                 </div>
@@ -232,9 +238,8 @@ const EventDetailsPage = () => {
                       return (
                         <div
                           key={ticketType.id}
-                          className={`border rounded-lg p-4 ${
-                            available ? 'border-gray-300 bg-white' : 'border-gray-200 bg-gray-100'
-                          }`}
+                          className={`border rounded-lg p-4 ${available ? 'border-gray-300 bg-white' : 'border-gray-200 bg-gray-100'
+                            }`}
                         >
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex-1">

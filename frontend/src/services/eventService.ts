@@ -5,9 +5,20 @@ export interface Event {
   name: string;
   description: string;
   eventDate: string;
-  venueName: string;
-  venueAddress: string;
-  category: string;
+  venue: {
+    id: string;
+    name: string;
+    address: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
+  category: {
+    id: string;
+    name: string;
+    description: string;
+  };
   imageUrl?: string;
   status: string;
   organizerId: string;
@@ -58,7 +69,7 @@ export const eventService = {
   // Get all events with optional filters
   async getEvents(criteria: SearchCriteria = {}): Promise<EventSearchResponse> {
     const params = new URLSearchParams();
-    
+
     if (criteria.query) params.append('query', criteria.query);
     if (criteria.category) params.append('category', criteria.category);
     if (criteria.city) params.append('city', criteria.city);
@@ -70,7 +81,7 @@ export const eventService = {
 
     const queryString = params.toString();
     const endpoint = queryString ? `/events?${queryString}` : '/events';
-    
+
     return apiRequest<EventSearchResponse>(endpoint);
   },
 
@@ -94,11 +105,12 @@ export const eventService = {
 
   // Get ticket types for an event
   async getTicketTypes(eventId: string): Promise<TicketType[]> {
-    return apiRequest<TicketType[]>(`/tickets/availability/${eventId}`);
+    return apiRequest<TicketType[]>(`/ticket-types/event/${eventId}`);
   },
 
   // Get all categories
   async getCategories(): Promise<string[]> {
-    return apiRequest<string[]>('/events/categories');
+    const categories = await apiRequest<Array<{ id: string; name: string }>>('/categories');
+    return categories.map(cat => cat.name);
   },
 };

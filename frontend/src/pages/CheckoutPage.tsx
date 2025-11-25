@@ -20,7 +20,7 @@ const CheckoutPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useAppDispatch();
-  
+
   const { currentOrder, loading, error, successMessage } = useAppSelector((state: RootState) => state.order);
   const { user } = useAppSelector((state: RootState) => state.auth);
 
@@ -147,15 +147,23 @@ const CheckoutPage = () => {
       // In production, this would come from Stripe Elements
       const paymentMethodId = `pm_${paymentMethod}_${Date.now()}`;
 
+      if (!user?.id) {
+        alert('User ID not found. Please log in again.');
+        return;
+      }
+
       // Process each ticket type separately (simplified for MVP)
       // In production, you might want to batch these or use the order creation endpoint
       for (const item of checkoutData.selectedTickets) {
         await dispatch(purchaseTickets({
-          eventId: checkoutData.eventId,
-          ticketTypeId: item.ticketType.id,
-          quantity: item.quantity,
-          unitPrice: item.ticketType.price,
-          paymentMethodId,
+          request: {
+            eventId: checkoutData.eventId,
+            ticketTypeId: item.ticketType.id,
+            quantity: item.quantity,
+            unitPrice: item.ticketType.price,
+            paymentMethodId,
+          },
+          userId: user.id
         })).unwrap();
       }
     } catch (err) {
@@ -246,27 +254,25 @@ const CheckoutPage = () => {
               {/* Payment Method */}
               <div className="bg-white rounded-lg shadow-md p-6">
                 <h2 className="text-xl font-semibold mb-4">Payment Method</h2>
-                
+
                 <div className="flex gap-4 mb-6">
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('card')}
-                    className={`flex-1 py-3 px-4 border-2 rounded-lg font-medium transition ${
-                      paymentMethod === 'card'
+                    className={`flex-1 py-3 px-4 border-2 rounded-lg font-medium transition ${paymentMethod === 'card'
                         ? 'border-blue-600 bg-blue-50 text-blue-600'
                         : 'border-gray-300 hover:border-gray-400'
-                    }`}
+                      }`}
                   >
                     💳 Credit/Debit Card
                   </button>
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('paypal')}
-                    className={`flex-1 py-3 px-4 border-2 rounded-lg font-medium transition ${
-                      paymentMethod === 'paypal'
+                    className={`flex-1 py-3 px-4 border-2 rounded-lg font-medium transition ${paymentMethod === 'paypal'
                         ? 'border-blue-600 bg-blue-50 text-blue-600'
                         : 'border-gray-300 hover:border-gray-400'
-                    }`}
+                      }`}
                   >
                     PayPal
                   </button>

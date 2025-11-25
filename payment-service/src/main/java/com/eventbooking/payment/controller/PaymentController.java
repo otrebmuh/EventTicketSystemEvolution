@@ -22,17 +22,17 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class PaymentController {
-    
+
     private final PaymentService paymentService;
     private final TicketPurchaseSaga ticketPurchaseSaga;
-    
+
     @PostMapping("/process")
     public ResponseEntity<ApiResponse<PaymentResponse>> processPayment(
             @Valid @RequestBody ProcessPaymentRequest request) {
         log.info("Processing payment request for order: {}", request.getOrderId());
-        
+
         PaymentResponse response = paymentService.processPayment(request);
-        
+
         if ("succeeded".equals(response.getStatus())) {
             return ResponseEntity.ok(ApiResponse.success("Payment processed successfully", response));
         } else if (response.getRequiresAction() != null && response.getRequiresAction()) {
@@ -42,44 +42,44 @@ public class PaymentController {
                     .body(ApiResponse.error(response.getErrorMessage()));
         }
     }
-    
+
     @PostMapping("/confirm/{paymentIntentId}")
     public ResponseEntity<ApiResponse<PaymentResponse>> confirmPayment(
             @PathVariable String paymentIntentId) {
         log.info("Confirming payment intent: {}", paymentIntentId);
-        
+
         PaymentResponse response = paymentService.confirmPayment(paymentIntentId);
         return ResponseEntity.ok(ApiResponse.success("Payment confirmed successfully", response));
     }
-    
+
     @PostMapping("/refund/{orderId}")
     public ResponseEntity<ApiResponse<PaymentResponse>> refundPayment(
-            @PathVariable UUID orderId,
-            @RequestParam(required = false, defaultValue = "Customer requested refund") String reason) {
+            @PathVariable("orderId") UUID orderId,
+            @RequestParam(value = "reason", required = false, defaultValue = "Customer requested refund") String reason) {
         log.info("Processing refund for order: {}", orderId);
-        
+
         PaymentResponse response = paymentService.refundPayment(orderId, reason);
         return ResponseEntity.ok(ApiResponse.success("Refund processed successfully", response));
     }
-    
+
     @GetMapping("/status/{transactionId}")
     public ResponseEntity<ApiResponse<PaymentResponse>> getPaymentStatus(
-            @PathVariable UUID transactionId) {
+            @PathVariable("transactionId") UUID transactionId) {
         log.debug("Fetching payment status for transaction: {}", transactionId);
-        
+
         PaymentResponse response = paymentService.getPaymentStatus(transactionId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
-    
+
     /**
      * Purchase tickets using saga pattern for distributed transaction handling
      */
     @PostMapping("/purchase-tickets")
     public ResponseEntity<ApiResponse<TicketPurchaseResponse>> purchaseTickets(
             @Valid @RequestBody TicketPurchaseRequest request,
-            @RequestHeader("X-User-Id") UUID userId) {
+            @RequestHeader(value = "X-User-Id") UUID userId) {
         log.info("Processing ticket purchase for user: {}, event: {}", userId, request.getEventId());
-        
+
         // Create saga context
         SagaContext context = TicketPurchaseSaga.createPurchaseContext();
         context.put("userId", userId);
@@ -89,20 +89,21 @@ public class PaymentController {
         context.put("unitPrice", request.getUnitPrice());
         context.put("paymentMethodId", request.getPaymentMethodId());
         context.put("reservationId", request.getReservationId());
-        
+
         // Execute saga
         boolean success = ticketPurchaseSaga.executePurchase(context);
-        
+
         if (success) {
+            UUID transactionId = context.get("transactionId", UUID.class);
             TicketPurchaseResponse response = TicketPurchaseResponse.builder()
                     .sagaId(context.getSagaId())
                     .orderId(context.get("orderId", UUID.class))
                     .orderNumber(context.get("orderNumber", String.class))
-                    .transactionId(context.get("transactionId", String.class))
+                    .transactionId(transactionId != null ? transactionId.toString() : null)
                     .status("SUCCESS")
                     .message("Ticket purchase completed successfully")
                     .build();
-            
+
             return ResponseEntity.ok(ApiResponse.success("Ticket purchase successful", response));
         } else {
             TicketPurchaseResponse response = TicketPurchaseResponse.builder()
@@ -110,7 +111,7 @@ public class PaymentController {
                     .status("FAILED")
                     .message(context.getErrorMessage())
                     .build();
-            
+
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.error("Ticket purchase failed: " + context.getErrorMessage()));
         }

@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 public class ObservabilityConfig {
 
     @Bean
-    public MeterRegistryCustomizer<MeterRegistry> metricsCommonTags() {
+    public MeterRegistryCustomizer<MeterRegistry> observabilityCommonTags() {
         return registry -> registry.config().commonTags("application", "event-booking-system");
     }
 

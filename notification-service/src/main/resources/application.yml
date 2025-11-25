@@ -108,6 +108,10 @@ services:
   payment:
     url: ${PAYMENT_SERVICE_URL:http://localhost:8083}
 
+jwt:
+  secret: ${JWT_SECRET:ThisIsAStrongSecretKeyForEventBookingSystem2025!}
+  expiration: 86400000
+
 resilience4j:
   circuitbreaker:
     instances:
@@ -169,3 +173,7 @@ services:
     url: http://ticket-service:8082
   payment:
     url: http://payment-service:8083
+
+jwt:
+  secret: ${JWT_SECRET:ThisIsAStrongSecretKeyForEventBookingSystem2025!}
+  expiration: 86400000

@@ -16,37 +16,37 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/reservations")
 public class ReservationController {
-    
+
     private final TicketTypeService ticketTypeService;
-    
+
     @Autowired
     public ReservationController(TicketTypeService ticketTypeService) {
         this.ticketTypeService = ticketTypeService;
     }
-    
+
     @PostMapping
     public ResponseEntity<ApiResponse<ReservationDto>> reserveTickets(
             @Valid @RequestBody ReserveTicketsRequest request,
-            @RequestHeader("X-User-Id") UUID userId) {
-        
+            @RequestHeader(value = "X-User-Id") UUID userId) {
+
         ReservationDto reservation = ticketTypeService.reserveTickets(request, userId);
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Tickets reserved successfully", reservation));
+                .body(ApiResponse.success("Tickets reserved successfully", reservation));
     }
-    
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> cancelReservation(
-            @PathVariable UUID id,
-            @RequestHeader("X-User-Id") UUID userId) {
-        
+            @PathVariable("id") UUID id,
+            @RequestHeader(value = "X-User-Id") UUID userId) {
+
         ticketTypeService.cancelReservation(id, userId);
         return ResponseEntity.ok(ApiResponse.success("Reservation cancelled successfully", null));
     }
-    
+
     @GetMapping("/my-reservations")
     public ResponseEntity<ApiResponse<List<ReservationDto>>> getMyActiveReservations(
-            @RequestHeader("X-User-Id") UUID userId) {
-        
+            @RequestHeader(value = "X-User-Id") UUID userId) {
+
         List<ReservationDto> reservations = ticketTypeService.getUserActiveReservations(userId);
         return ResponseEntity.ok(ApiResponse.success(reservations));
     }

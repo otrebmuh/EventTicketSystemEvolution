@@ -34,9 +34,10 @@ public class InternalAuthController {
     public ResponseEntity<TokenValidationResponse> validateToken(@RequestBody TokenValidationRequest request) {
         try {
             String token = request.getToken();
-            
+
             if (!jwtTokenService.validateTokenStructure(token)) {
-                return ResponseEntity.ok(TokenValidationResponse.invalid("INVALID_TOKEN", "Token is invalid or expired"));
+                return ResponseEntity
+                        .ok(TokenValidationResponse.invalid("INVALID_TOKEN", "Token is invalid or expired"));
             }
 
             UUID userId = jwtTokenService.extractUserId(token);
@@ -59,7 +60,7 @@ public class InternalAuthController {
     }
 
     @GetMapping("/users/{userId}")
-    public ResponseEntity<UserDto> getUserById(@PathVariable UUID userId) {
+    public ResponseEntity<UserDto> getUserById(@PathVariable("userId") UUID userId) {
         return userRepository.findById(userId)
                 .map(this::toUserDto)
                 .map(ResponseEntity::ok)

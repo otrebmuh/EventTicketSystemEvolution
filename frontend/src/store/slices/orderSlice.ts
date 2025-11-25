@@ -33,9 +33,9 @@ const initialState: OrderState = {
 // Async thunks
 export const purchaseTickets = createAsyncThunk(
   'order/purchaseTickets',
-  async (request: TicketPurchaseRequest, { rejectWithValue }) => {
+  async ({ request, userId }: { request: TicketPurchaseRequest; userId: string }, { rejectWithValue }) => {
     try {
-      const response = await paymentService.purchaseTickets(request);
+      const response = await paymentService.purchaseTickets(request, userId);
       // Fetch the complete order details
       const order = await paymentService.getOrderById(response.orderId);
       return { purchaseResponse: response, order };

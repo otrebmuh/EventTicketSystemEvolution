@@ -83,7 +83,7 @@ management:
         enabled: true
 
 jwt:
-  secret: ${JWT_SECRET:mySecretKey}
+  secret: ${JWT_SECRET:ThisIsAStrongSecretKeyForEventBookingSystem2025!}
   expiration: 86400000 # 24 hours
 
 service:
