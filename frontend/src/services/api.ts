@@ -28,7 +28,7 @@ export class ApiException extends Error {
   }
 }
 
-async function handleResponse<T>(response: Response): Promise<T> {
+async function handleResponse<T>(response: Response, unwrap: boolean = true): Promise<T> {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({
       code: 'UNKNOWN_ERROR',
@@ -40,18 +40,23 @@ async function handleResponse<T>(response: Response): Promise<T> {
   const responseData = await response.json();
 
   // Backend wraps responses in ApiResponse<T>, extract the data field
-  if (responseData && typeof responseData === 'object' && 'data' in responseData) {
+  if (unwrap && responseData && typeof responseData === 'object' && 'data' in responseData) {
     return responseData.data as T;
   }
 
   return responseData;
 }
 
+export interface RequestOptions extends RequestInit {
+  unwrap?: boolean;
+}
+
 export async function apiRequest<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestOptions = {}
 ): Promise<T> {
   const token = localStorage.getItem('token');
+  const { unwrap = true, ...fetchOptions } = options;
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -64,14 +69,14 @@ export async function apiRequest<T>(
   }
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
+    ...fetchOptions,
     headers: {
       ...headers,
-      ...(options.headers as Record<string, string>),
+      ...(fetchOptions.headers as Record<string, string>),
     },
     // Include credentials for CORS requests
     credentials: 'include',
   });
 
-  return handleResponse<T>(response);
+  return handleResponse<T>(response, unwrap);
 }

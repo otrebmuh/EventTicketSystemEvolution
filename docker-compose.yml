@@ -160,6 +160,8 @@ services:
       PAYMENT_SERVICE_URL: http://payment-service:8080
       MONITORING_CLOUDWATCH_ENABLED: "false"
       JWT_SECRET: "ThisIsAStrongSecretKeyForEventBookingSystem2025"
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
     depends_on:
       auth-db:
         condition: service_healthy

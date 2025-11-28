@@ -163,7 +163,7 @@ The Event Ticket Booking System MVP is a web-based platform that enables event o
 4. WHEN password reset is requested, THE Event_Ticket_System SHALL send password reset emails
 5. WHEN sending emails, THE Event_Ticket_System SHALL handle delivery failures gracefully and provide retry mechanisms
 
-### Requirement 9
+### Requirement 13
 
 **User Story:** As a user, I want the system to be secure and protect my data, so that I can trust the platform with my personal and payment information.
 
@@ -175,7 +175,7 @@ The Event Ticket Booking System MVP is a web-based platform that enables event o
 4. THE Event_Ticket_System SHALL use HTTPS for all communications
 5. THE Event_Ticket_System SHALL implement proper session management and CSRF protection
 
-### Requirement 10
+### Requirement 14
 
 **User Story:** As a user, I want the system to perform well under load, so that I can complete purchases even during high-demand periods.
 

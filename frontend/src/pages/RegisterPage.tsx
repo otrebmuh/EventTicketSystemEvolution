@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { registerUser, clearError, clearSuccessMessage } from '../store/slices/authSlice';
 import { validateEmail, validatePassword, validateRequired, validateDateOfBirth, validatePasswordMatch, ValidationError } from '../utils/validation';
+import Modal from '../components/common/Modal';
 
 const RegisterPage = () => {
   const dispatch = useAppDispatch();
@@ -28,15 +29,17 @@ const RegisterPage = () => {
     };
   }, [dispatch]);
 
+
+
   useEffect(() => {
-    if (successMessage) {
-      // Show success message for 3 seconds then redirect to login
-      const timer = setTimeout(() => {
-        navigate('/login', { state: { message: 'Registration successful! Please check your email to verify your account.' } });
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [successMessage, navigate]);
+    // We no longer auto-redirect. The Modal will handle it.
+    console.log('RegisterPage successMessage:', successMessage);
+    console.log('Type of successMessage:', typeof successMessage);
+  }, [successMessage]);
+
+  const handleSuccessModalClose = () => {
+    navigate('/login', { state: { message: 'Registration successful! Please check your email to verify your account.' } });
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -151,11 +154,7 @@ const RegisterPage = () => {
           </div>
         )}
 
-        {successMessage && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-green-800 text-sm">{successMessage}</p>
-          </div>
-        )}
+
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
@@ -292,6 +291,15 @@ const RegisterPage = () => {
           </Link>
         </p>
       </div>
+
+      <Modal
+        isOpen={!!successMessage}
+        title="Registration Successful"
+        message={typeof successMessage === 'string' ? successMessage : JSON.stringify(successMessage) || "Your account has been successfully created."}
+        onClose={handleSuccessModalClose}
+        buttonText="Go to Login"
+        type="success"
+      />
     </div>
   );
 };

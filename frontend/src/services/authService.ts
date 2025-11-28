@@ -40,10 +40,11 @@ export interface ResetPasswordRequest {
 }
 
 export const authService = {
-  register: async (data: RegisterRequest): Promise<{ message: string }> => {
+  register: async (data: RegisterRequest): Promise<{ message: string, data: any }> => {
     return apiRequest('/auth/register', {
       method: 'POST',
       body: JSON.stringify(data),
+      unwrap: false,
     });
   },
 
