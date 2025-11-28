@@ -113,7 +113,7 @@ public class PaymentServiceImpl implements PaymentService {
                 log.info("Payment succeeded for order: {}", order.getId());
 
                 // Publish payment completed event
-                eventPublisher.publishPaymentCompleted(order, transaction.getGatewayTransactionId());
+                eventPublisher.publishPaymentCompleted(order, transaction.getGatewayTransactionId(), null, null);
 
                 return buildSuccessResponse(transaction, paymentIntent);
             } else if ("requires_action".equals(paymentIntent.getStatus()) ||
@@ -183,7 +183,7 @@ public class PaymentServiceImpl implements PaymentService {
             order.setPaymentStatus(PaymentStatus.CONFIRMED);
             orderRepository.save(order);
 
-            eventPublisher.publishPaymentCompleted(order, transaction.getGatewayTransactionId());
+            eventPublisher.publishPaymentCompleted(order, transaction.getGatewayTransactionId(), null, null);
 
             return PaymentResponse.builder()
                     .transactionId(transaction.getId())
@@ -225,7 +225,7 @@ public class PaymentServiceImpl implements PaymentService {
                 log.info("Payment confirmed for order: {}", order.getId());
 
                 // Publish payment completed event
-                eventPublisher.publishPaymentCompleted(order, transaction.getGatewayTransactionId());
+                eventPublisher.publishPaymentCompleted(order, transaction.getGatewayTransactionId(), null, null);
 
                 return buildSuccessResponse(transaction, paymentIntent);
             } else {

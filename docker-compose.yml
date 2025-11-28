@@ -215,6 +215,14 @@ services:
       EVENT_SERVICE_URL: http://event-service:8080
       MONITORING_CLOUDWATCH_ENABLED: "false"
       JWT_SECRET: "ThisIsAStrongSecretKeyForEventBookingSystem2025"
+      # AWS Configuration
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      AWS_ENDPOINT_OVERRIDE: ${AWS_ENDPOINT_OVERRIDE:-http://localstack:4566}
+      AWS_SQS_ENDPOINT: ${AWS_SQS_ENDPOINT:-http://localstack:4566}
+      AWS_CBOR_DISABLE: "true"
+      AWS_SQS_PAYMENT_EVENTS_QUEUE: ${AWS_SQS_PAYMENT_EVENTS_QUEUE:-http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/payment-events-queue}
     depends_on:
       ticket-db:
         condition: service_healthy

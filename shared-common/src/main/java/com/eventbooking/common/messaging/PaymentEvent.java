@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class PaymentEvent {
-    
+
     public enum EventType {
         PAYMENT_COMPLETED,
         PAYMENT_FAILED,
@@ -14,7 +14,7 @@ public class PaymentEvent {
         ORDER_CANCELLED,
         REFUND_PROCESSED
     }
-    
+
     private EventType eventType;
     private UUID orderId;
     private UUID userId;
@@ -23,16 +23,18 @@ public class PaymentEvent {
     private BigDecimal amount;
     private String paymentStatus;
     private String transactionId;
-    
+    private UUID ticketTypeId;
+    private Integer quantity;
+
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime timestamp;
-    
+
     private String errorMessage;
-    
+
     public PaymentEvent() {
         this.timestamp = LocalDateTime.now();
     }
-    
+
     public PaymentEvent(EventType eventType, UUID orderId, UUID userId) {
         this();
         this.eventType = eventType;
@@ -103,6 +105,22 @@ public class PaymentEvent {
 
     public void setTransactionId(String transactionId) {
         this.transactionId = transactionId;
+    }
+
+    public UUID getTicketTypeId() {
+        return ticketTypeId;
+    }
+
+    public void setTicketTypeId(UUID ticketTypeId) {
+        this.ticketTypeId = ticketTypeId;
+    }
+
+    public Integer getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(Integer quantity) {
+        this.quantity = quantity;
     }
 
     public LocalDateTime getTimestamp() {
