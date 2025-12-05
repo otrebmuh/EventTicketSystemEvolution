@@ -15,7 +15,7 @@ public class EmailServiceImpl implements EmailService {
     
     private final JavaMailSender mailSender;
     
-    @Value("${spring.mail.username:noreply@eventbooking.com}")
+    @Value("${spring.mail.from:noreply@eventbooking.com}")
     private String fromEmail;
     
     @Value("${app.frontend.url:http://localhost:3000}")
@@ -55,8 +55,8 @@ public class EmailServiceImpl implements EmailService {
             logger.info("Email verification sent successfully to: {}", email);
             
         } catch (Exception e) {
-            logger.error("Failed to send email verification to {}: {}", email, e.getMessage());
-            throw new RuntimeException("Failed to send verification email", e);
+            logger.warn("Failed to send email verification to {}: {} (Email service may not be configured)", email, e.getMessage());
+            // Don't throw exception - allow registration to continue even if email fails
         }
     }
     
@@ -89,8 +89,8 @@ public class EmailServiceImpl implements EmailService {
             logger.info("Password reset email sent successfully to: {}", email);
             
         } catch (Exception e) {
-            logger.error("Failed to send password reset email to {}: {}", email, e.getMessage());
-            throw new RuntimeException("Failed to send password reset email", e);
+            logger.warn("Failed to send password reset email to {}: {} (Email service may not be configured)", email, e.getMessage());
+            // Don't throw exception for password reset emails in development
         }
     }
     

@@ -47,14 +47,15 @@ public class MonitoringConfig {
 
     /**
      * Configure CloudWatch metrics registry for publishing application metrics
+     * Only created when cloudwatch is explicitly enabled and in production profile
      */
     @Bean
-    @Profile("!test")
+    @Profile("production")
+    @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+        name = "monitoring.cloudwatch.enabled",
+        havingValue = "true"
+    )
     public CloudWatchMeterRegistry cloudWatchMeterRegistry() {
-        if (!cloudWatchEnabled) {
-            return null;
-        }
-
         CloudWatchConfig cloudWatchConfig = new CloudWatchConfig() {
             private final Map<String, String> configuration = Map.of(
                 "cloudwatch.namespace", cloudWatchNamespace,
@@ -99,14 +100,15 @@ public class MonitoringConfig {
 
     /**
      * Configure AWS X-Ray for distributed tracing
+     * Only enabled in production profile
      */
     @Bean
-    @Profile("!test")
+    @Profile("production")
+    @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+        name = "monitoring.xray.enabled",
+        havingValue = "true"
+    )
     public Filter tracingFilter() {
-        if (!xrayEnabled) {
-            return (request, response, chain) -> chain.doFilter(request, response);
-        }
-
         // Configure X-Ray recorder
         AWSXRayRecorderBuilder builder = AWSXRayRecorderBuilder.standard()
             .withPlugin(new EC2Plugin())

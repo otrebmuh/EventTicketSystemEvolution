@@ -6,10 +6,48 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
+    host: true,
     proxy: {
-      '/api': {
-        target: 'http://localhost:8080',
+      '/api/auth': {
+        target: 'http://localhost:8091',
         changeOrigin: true,
+        secure: false,
+        ws: true,
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('proxy error', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            console.log('Sending Request to the Target:', req.method, req.url);
+          });
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
+          });
+        },
+      },
+      '/api/events': {
+        target: 'http://localhost:8092',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
+      '/api/tickets': {
+        target: 'http://localhost:8093',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
+      '/api/payments': {
+        target: 'http://localhost:8094',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
+      '/api/notifications': {
+        target: 'http://localhost:8095',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
       },
     },
   },

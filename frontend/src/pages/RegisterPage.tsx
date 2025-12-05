@@ -128,8 +128,8 @@ const RegisterPage = () => {
       return;
     }
 
-    const { confirmPassword, ...registrationData } = formData;
-    dispatch(registerUser(registrationData));
+    // Send all data including confirmPassword to backend
+    dispatch(registerUser(formData));
   };
 
   const getInputClassName = (field: string) => {
