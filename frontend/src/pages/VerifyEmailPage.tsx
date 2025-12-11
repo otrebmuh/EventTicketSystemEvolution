@@ -1,95 +1,150 @@
-import { useEffect, useState } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { verifyEmail, clearError, clearSuccessMessage } from '../store/slices/authSlice';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import axios from 'axios';
 
-const VerifyEmailPage = () => {
-  const dispatch = useAppDispatch();
+const VerifyEmailPage: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const { loading, error, successMessage } = useAppSelector((state) => state.auth);
-  const [verificationAttempted, setVerificationAttempted] = useState(false);
+  const navigate = useNavigate();
+  const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
+  const [message, setMessage] = useState('');
+  const [countdown, setCountdown] = useState(5);
 
   useEffect(() => {
     const token = searchParams.get('token');
     
-    if (token && !verificationAttempted) {
-      setVerificationAttempted(true);
-      dispatch(verifyEmail({ token }));
+    if (!token) {
+      setStatus('error');
+      setMessage('Invalid verification link. No token provided.');
+      return;
     }
 
-    return () => {
-      dispatch(clearError());
-      dispatch(clearSuccessMessage());
+    // Verify email with token
+    const verifyEmail = async () => {
+      try {
+        const response = await axios.post('/api/auth/verify-email', { token });
+        
+        if (response.data.success) {
+          setStatus('success');
+          setMessage(response.data.message || 'Email verified successfully!');
+          
+          // Start countdown to redirect
+          const timer = setInterval(() => {
+            setCountdown((prev) => {
+              if (prev <= 1) {
+                clearInterval(timer);
+                navigate('/login');
+                return 0;
+              }
+              return prev - 1;
+            });
+          }, 1000);
+          
+          return () => clearInterval(timer);
+        } else {
+          setStatus('error');
+          setMessage(response.data.message || 'Email verification failed.');
+        }
+      } catch (error: any) {
+        setStatus('error');
+        if (error.response?.data?.message) {
+          setMessage(error.response.data.message);
+        } else {
+          setMessage('An error occurred during email verification. Please try again.');
+        }
+      }
     };
-  }, [searchParams, dispatch, verificationAttempted]);
+
+    verifyEmail();
+  }, [searchParams, navigate]);
 
   return (
-    <div className="container mx-auto px-4 py-16">
-      <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-8">
-        <h1 className="text-3xl font-bold text-center mb-8">Email Verification</h1>
-        
-        {loading && (
-          <div className="text-center py-8">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <p className="mt-4 text-gray-600">Verifying your email...</p>
-          </div>
-        )}
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Email Verification
+          </h2>
+        </div>
 
-        {!loading && successMessage && (
-          <div className="text-center">
-            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <svg className="w-12 h-12 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <p className="text-green-800 text-sm">{successMessage}</p>
+        <div className="bg-white shadow-md rounded-lg p-8">
+          {status === 'verifying' && (
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Verifying your email...</p>
             </div>
-            <Link
-              to="/login"
-              className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
-            >
-              Go to Login
-            </Link>
-          </div>
-        )}
+          )}
 
-        {!loading && error && (
-          <div className="text-center">
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <svg className="w-12 h-12 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              <p className="text-red-800 text-sm">{error}</p>
-            </div>
-            <div className="space-y-4">
-              <Link
-                to="/register"
-                className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
-              >
-                Register Again
-              </Link>
-              <p className="text-gray-600 text-sm">
-                Already have an account?{' '}
-                <Link to="/login" className="text-blue-600 hover:text-blue-700 font-semibold">
-                  Login here
-                </Link>
+          {status === 'success' && (
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100">
+                <svg
+                  className="h-10 w-10 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <h3 className="mt-4 text-lg font-medium text-gray-900">
+                Email Verified Successfully!
+              </h3>
+              <p className="mt-2 text-sm text-gray-600">{message}</p>
+              <p className="mt-4 text-sm text-gray-500">
+                Redirecting to login in {countdown} seconds...
               </p>
+              <button
+                onClick={() => navigate('/login')}
+                className="mt-6 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Go to Login Now
+              </button>
             </div>
-          </div>
-        )}
+          )}
 
-        {!loading && !error && !successMessage && !verificationAttempted && (
-          <div className="text-center">
-            <p className="text-gray-600 mb-6">
-              No verification token found. Please check your email for the verification link.
-            </p>
-            <Link
-              to="/login"
-              className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
-            >
-              Go to Login
-            </Link>
-          </div>
-        )}
+          {status === 'error' && (
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100">
+                <svg
+                  className="h-10 w-10 text-red-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </div>
+              <h3 className="mt-4 text-lg font-medium text-gray-900">
+                Verification Failed
+              </h3>
+              <p className="mt-2 text-sm text-gray-600">{message}</p>
+              <div className="mt-6 space-y-3">
+                <button
+                  onClick={() => navigate('/login')}
+                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Go to Login
+                </button>
+                <button
+                  onClick={() => navigate('/register')}
+                  className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Register New Account
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

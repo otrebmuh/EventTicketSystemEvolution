@@ -67,6 +67,24 @@ public class AuthController {
     }
     
     /**
+     * Resend email verification endpoint
+     */
+    @PostMapping("/resend-verification")
+    public ResponseEntity<ApiResponse<String>> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
+        
+        logger.info("Resend verification request for email: {}", request.getEmail());
+        
+        try {
+            authService.resendEmailVerification(request.getEmail());
+            return ResponseEntity.ok(ApiResponse.success("Verification email sent. Please check your email."));
+        } catch (Exception e) {
+            logger.error("Resend verification failed for email {}: {}", request.getEmail(), e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        }
+    }
+    
+    /**
      * User login endpoint
      */
     @PostMapping("/login")

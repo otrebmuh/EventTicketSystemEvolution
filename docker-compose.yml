@@ -128,7 +128,7 @@ services:
     ports:
       - "8091:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_ACTIVE: docker,gmail
       SPRING_DATASOURCE_URL: jdbc:postgresql://auth-db:5432/auth_service
       SPRING_DATASOURCE_USERNAME: auth_user
       SPRING_DATASOURCE_PASSWORD: auth_password
@@ -137,6 +137,30 @@ services:
       EVENT_SERVICE_URL: http://event-service:8080
       TICKET_SERVICE_URL: http://ticket-service:8080
       PAYMENT_SERVICE_URL: http://payment-service:8080
+      # Email Configuration
+      # Para desarrollo local con MailHog (por defecto):
+      MAIL_HOST: ${MAIL_HOST:-mailhog}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      # Para email real (Gmail, SendGrid, etc), configura estas variables en .env:
+      # MAIL_HOST: smtp.gmail.com
+      # MAIL_PORT: 587
+      # MAIL_USERNAME: tu-email@gmail.com
+      # MAIL_PASSWORD: tu-contraseña-de-aplicacion
+      # MAIL_FROM: tu-email@gmail.com
+      # MAIL_SMTP_AUTH: true
+      # MAIL_SMTP_STARTTLS_ENABLE: true
+      # MAIL_SMTP_STARTTLS_REQUIRED: true
+      # MAIL_SMTP_SSL_TRUST: smtp.gmail.com
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-noreply@eventbooking.com}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-false}
+      MAIL_SMTP_STARTTLS_ENABLE: ${MAIL_SMTP_STARTTLS_ENABLE:-false}
+      MAIL_SMTP_STARTTLS_REQUIRED: ${MAIL_SMTP_STARTTLS_REQUIRED:-false}
+      MAIL_SMTP_SSL_TRUST: ${MAIL_SMTP_SSL_TRUST:-*}
+      MAIL_DEBUG: ${MAIL_DEBUG:-true}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      JWT_SECRET: ${JWT_SECRET:-myVerySecureJWTSecretKeyForEventBookingSystem2024WithMinimum256Bits}
     depends_on:
       auth-db:
         condition: service_healthy

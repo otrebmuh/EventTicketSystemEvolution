@@ -19,6 +19,9 @@ const LoginPage = () => {
   const [validationErrors, setValidationErrors] = useState<ValidationError>({});
   const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  const [showResendVerification, setShowResendVerification] = useState(false);
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   useEffect(() => {
     // Check for messages from registration or other pages
@@ -106,7 +109,43 @@ const LoginPage = () => {
       return;
     }
 
-    dispatch(loginUser(formData));
+    try {
+      const result = await dispatch(loginUser(formData)).unwrap();
+      // Login successful
+    } catch (err: any) {
+      // Check if error is about unverified email
+      if (err?.includes('verify your email') || err?.includes('email verification')) {
+        setShowResendVerification(true);
+      }
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setResendingVerification(true);
+    setResendMessage(null);
+    
+    try {
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: formData.email }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setResendMessage('Verification email sent! Please check your inbox.');
+        setShowResendVerification(false);
+      } else {
+        setResendMessage(data.message || 'Failed to send verification email.');
+      }
+    } catch (error) {
+      setResendMessage('An error occurred. Please try again.');
+    } finally {
+      setResendingVerification(false);
+    }
   };
 
   const getInputClassName = (field: string) => {
@@ -131,6 +170,21 @@ const LoginPage = () => {
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-800 text-sm">{error}</p>
+            {showResendVerification && (
+              <button
+                onClick={handleResendVerification}
+                disabled={resendingVerification}
+                className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-semibold underline disabled:text-gray-400"
+              >
+                {resendingVerification ? 'Sending...' : 'Resend verification email'}
+              </button>
+            )}
+          </div>
+        )}
+        
+        {resendMessage && (
+          <div className={`mb-6 p-4 rounded-lg ${resendMessage.includes('sent') ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'}`}>
+            <p className={`text-sm ${resendMessage.includes('sent') ? 'text-green-800' : 'text-yellow-800'}`}>{resendMessage}</p>
           </div>
         )}
         

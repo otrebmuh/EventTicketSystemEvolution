@@ -64,7 +64,7 @@ services:
   # Application services with development configurations
   auth-service:
     environment:
-      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_ACTIVE: docker,gmail
       LOGGING_LEVEL_COM_EVENTBOOKING: DEBUG
       SPRING_JPA_SHOW_SQL: "true"
     volumes:
