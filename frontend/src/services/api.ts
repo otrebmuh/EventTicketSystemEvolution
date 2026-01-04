@@ -21,14 +21,36 @@ export class ApiException extends Error {
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
+  const responseData = await response.json().catch(() => ({
+    success: false,
+    message: 'An unexpected error occurred',
+  }));
+
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({
-      code: 'UNKNOWN_ERROR',
-      message: 'An unexpected error occurred',
-    }));
-    throw new ApiException(response.status, errorData.error || errorData);
+    // Handle different error response formats
+    let errorMessage = 'An unexpected error occurred';
+    
+    if (responseData.message) {
+      errorMessage = responseData.message;
+    } else if (responseData.error && responseData.error.message) {
+      errorMessage = responseData.error.message;
+    }
+    
+    const apiError = {
+      code: responseData.code || 'API_ERROR',
+      message: errorMessage,
+      details: responseData.details
+    };
+    
+    throw new ApiException(response.status, apiError);
   }
-  return response.json();
+
+  // For successful responses, return the data or the whole response
+  if (responseData.data !== undefined) {
+    return responseData.data;
+  }
+  
+  return responseData;
 }
 
 export async function apiRequest<T>(

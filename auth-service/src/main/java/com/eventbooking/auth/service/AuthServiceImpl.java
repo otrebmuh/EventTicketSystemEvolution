@@ -61,6 +61,8 @@ public class AuthServiceImpl implements AuthService {
         this.jwtTokenService = jwtTokenService;
         this.emailService = emailService;
         this.passwordEncoder = new BCryptPasswordEncoder();
+        
+        logger.info("Auth service initialized - using hybrid session management (Database + Redis cache)");
     }
     
     @Override
@@ -206,9 +208,14 @@ public class AuthServiceImpl implements AuthService {
             // Deactivate database session
             userSessionRepository.deactivateSessionByTokenHash(tokenHash);
             
-            // Remove Redis session
-            Optional<RedisUserSession> redisSession = redisUserSessionRepository.findByTokenHash(tokenHash);
-            redisSession.ifPresent(redisUserSessionRepository::delete);
+            // Remove Redis session (optional - don't fail if Redis is unavailable)
+            try {
+                Optional<RedisUserSession> redisSession = redisUserSessionRepository.findByTokenHash(tokenHash);
+                redisSession.ifPresent(redisUserSessionRepository::delete);
+                logger.debug("Redis session removed successfully");
+            } catch (Exception e) {
+                logger.warn("Failed to remove Redis session: {}. Database session was deactivated.", e.getMessage());
+            }
             
             logger.info("User logged out successfully");
             
@@ -299,7 +306,14 @@ public class AuthServiceImpl implements AuthService {
         
         // Invalidate all user sessions (logout from all devices)
         userSessionRepository.deactivateAllUserSessions(user.getId());
-        redisUserSessionRepository.deleteByUserId(user.getId());
+        
+        // Remove Redis sessions (optional - don't fail if Redis is unavailable)
+        try {
+            redisUserSessionRepository.deleteByUserId(user.getId());
+            logger.debug("Redis sessions deleted successfully for user: {}", user.getEmail());
+        } catch (Exception e) {
+            logger.warn("Failed to delete Redis sessions for user {}: {}. Continuing with database session deactivation only.", user.getEmail(), e.getMessage());
+        }
         
         // Send confirmation email
         emailService.sendPasswordChangeConfirmation(user.getEmail(), user.getFirstName());
@@ -382,20 +396,25 @@ public class AuthServiceImpl implements AuthService {
         );
         userSessionRepository.save(session);
         
-        // Create Redis session
-        RedisUserSession redisSession = new RedisUserSession(
-            session.getId().toString(),
-            user.getId(),
-            user.getEmail(),
-            user.getFirstName(),
-            user.getLastName(),
-            user.isEmailVerified(),
-            tokenHash,
-            clientInfo,
-            extractIpFromClientInfo(clientInfo),
-            jwtTokenService.getTokenExpirationInSeconds(rememberMe)
-        );
-        redisUserSessionRepository.save(redisSession);
+        // Create Redis session (optional - don't fail if Redis is unavailable)
+        try {
+            RedisUserSession redisSession = new RedisUserSession(
+                session.getId().toString(),
+                user.getId(),
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.isEmailVerified(),
+                tokenHash,
+                clientInfo,
+                extractIpFromClientInfo(clientInfo),
+                jwtTokenService.getTokenExpirationInSeconds(rememberMe)
+            );
+            redisUserSessionRepository.save(redisSession);
+            logger.debug("Redis session created successfully for user: {}", user.getEmail());
+        } catch (Exception e) {
+            logger.warn("Failed to create Redis session for user {}: {}. Continuing with database session only.", user.getEmail(), e.getMessage());
+        }
     }
     
     private UserDto convertToUserDto(User user) {

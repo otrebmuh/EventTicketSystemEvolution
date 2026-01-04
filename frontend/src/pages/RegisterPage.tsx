@@ -8,6 +8,7 @@ const RegisterPage = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { loading, error, successMessage } = useAppSelector((state) => state.auth);
+  const [countdown, setCountdown] = useState(5);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -30,13 +31,37 @@ const RegisterPage = () => {
 
   useEffect(() => {
     if (successMessage) {
-      // Show success message for 3 seconds then redirect to login
-      const timer = setTimeout(() => {
-        navigate('/login', { state: { message: 'Registration successful! Please check your email to verify your account.' } });
-      }, 3000);
-      return () => clearTimeout(timer);
+      console.log('Success message detected:', successMessage); // Debug log
+      
+      // Start countdown
+      setCountdown(5);
+      const countdownTimer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(countdownTimer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      // Redirect after 5 seconds
+      const redirectTimer = setTimeout(() => {
+        console.log('Redirecting to login...'); // Debug log
+        dispatch(clearSuccessMessage());
+        navigate('/login', { 
+          state: { 
+            message: 'Registration successful! Please check your email to verify your account before logging in.' 
+          } 
+        });
+      }, 5000);
+
+      return () => {
+        clearInterval(countdownTimer);
+        clearTimeout(redirectTimer);
+      };
     }
-  }, [successMessage, navigate]);
+  }, [successMessage, navigate, dispatch]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -128,8 +153,26 @@ const RegisterPage = () => {
       return;
     }
 
-    // Send all data including confirmPassword to backend
-    dispatch(registerUser(formData));
+    try {
+      // Send all data including confirmPassword to backend
+      const result = await dispatch(registerUser(formData));
+      
+      // Check if registration was successful
+      if (registerUser.fulfilled.match(result)) {
+        console.log('Registration successful, redirecting...'); // Debug log
+        
+        // Show success message briefly then redirect
+        setTimeout(() => {
+          navigate('/login', { 
+            state: { 
+              message: 'Registration successful! Please check your email to verify your account before logging in.' 
+            } 
+          });
+        }, 3000);
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+    }
   };
 
   const getInputClassName = (field: string) => {
@@ -152,8 +195,33 @@ const RegisterPage = () => {
         )}
 
         {successMessage && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-green-800 text-sm">{successMessage}</p>
+          <div className="mb-6 p-6 bg-green-50 border-2 border-green-200 rounded-lg text-center">
+            <div className="flex items-center justify-center mb-3">
+              <svg className="w-8 h-8 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <h3 className="text-lg font-semibold text-green-800">Registration Successful!</h3>
+            </div>
+            <p className="text-green-700 mb-3">{successMessage}</p>
+            <p className="text-green-600 text-sm">
+              Please check your email to verify your account.
+            </p>
+            <p className="text-green-600 text-sm mt-2">
+              Redirecting to login page in <span className="font-bold">{countdown}</span> seconds...
+            </p>
+            <button
+              onClick={() => {
+                dispatch(clearSuccessMessage());
+                navigate('/login', { 
+                  state: { 
+                    message: 'Registration successful! Please check your email to verify your account before logging in.' 
+                  } 
+                });
+              }}
+              className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              Go to Login Now
+            </button>
           </div>
         )}
         

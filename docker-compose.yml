@@ -119,6 +119,21 @@ services:
       timeout: 5s
       retries: 5
 
+  # MailHog for email testing
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog
+    ports:
+      - "1025:1025"  # SMTP server
+      - "8025:8025"  # Web UI
+    networks:
+      - event-booking-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8025"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   # Application services
   auth-service:
     build:
@@ -132,6 +147,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://auth-db:5432/auth_service
       SPRING_DATASOURCE_USERNAME: auth_user
       SPRING_DATASOURCE_PASSWORD: auth_password
+      # Redis configuration for session management and caching
       SPRING_REDIS_HOST: redis-cache
       SPRING_REDIS_PORT: 6379
       EVENT_SERVICE_URL: http://event-service:8080
@@ -164,6 +180,7 @@ services:
     depends_on:
       auth-db:
         condition: service_healthy
+      # Redis dependency for session management and caching
       redis:
         condition: service_healthy
     networks:

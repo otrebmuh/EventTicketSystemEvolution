@@ -12,12 +12,20 @@ const HomePage = () => {
           Find and book tickets for concerts, sports, theater, and more. 
           Your next unforgettable experience is just a click away.
         </p>
-        <Link
-          to="/events"
-          className="inline-block bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition"
-        >
-          Browse Events
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Link
+            to="/events"
+            className="inline-block bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition"
+          >
+            Browse Events
+          </Link>
+          <Link
+            to="/register"
+            className="inline-block bg-green-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-green-700 transition"
+          >
+            Create Account
+          </Link>
+        </div>
       </section>
 
       {/* Features Section */}
@@ -46,6 +54,31 @@ const HomePage = () => {
             <p className="text-gray-600">
               Get your tickets instantly via email with QR codes for easy entry.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Call to Action Section */}
+      <section className="bg-blue-600 text-white py-16">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
+          <p className="text-xl mb-8 max-w-2xl mx-auto">
+            Create your account today and start booking tickets for amazing events. 
+            Join thousands of satisfied customers who trust us with their event experiences.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              to="/register"
+              className="inline-block bg-white text-blue-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition"
+            >
+              Create Free Account
+            </Link>
+            <Link
+              to="/login"
+              className="inline-block border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-blue-600 transition"
+            >
+              Already Have Account? Login
+            </Link>
           </div>
         </div>
       </section>
