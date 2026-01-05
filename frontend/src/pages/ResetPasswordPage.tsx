@@ -107,7 +107,11 @@ const ResetPasswordPage = () => {
       return;
     }
 
-    dispatch(resetPassword({ token, newPassword: formData.newPassword }));
+    dispatch(resetPassword({ 
+      token, 
+      newPassword: formData.newPassword,
+      confirmPassword: formData.confirmPassword
+    }));
   };
 
   const getInputClassName = (field: string) => {

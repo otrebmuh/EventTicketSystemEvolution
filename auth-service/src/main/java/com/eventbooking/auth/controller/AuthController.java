@@ -4,6 +4,8 @@ import com.eventbooking.auth.dto.*;
 import com.eventbooking.auth.service.AuthService;
 import com.eventbooking.common.dto.ApiResponse;
 import com.eventbooking.common.dto.UserDto;
+import com.eventbooking.common.exception.UnauthorizedException;
+import com.eventbooking.common.exception.ValidationException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -97,10 +99,18 @@ public class AuthController {
         try {
             LoginResponse response = authService.authenticateUser(request, getClientInfo(httpRequest));
             return ResponseEntity.ok(ApiResponse.success("Login successful", response));
-        } catch (Exception e) {
+        } catch (UnauthorizedException e) {
             logger.error("Login failed for email {}: {}", request.getEmail(), e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error(e.getMessage()));
+        } catch (ValidationException e) {
+            logger.error("Validation error for email {}: {}", request.getEmail(), e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Unexpected error during login for email {}: {}", request.getEmail(), e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("An unexpected error occurred. Please try again later."));
         }
     }
     

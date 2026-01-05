@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -157,9 +158,11 @@ public class AuthServiceImpl implements AuthService {
         if (user.isAccountLocked()) {
             LocalDateTime unlockTime = user.getLastLoginAttempt().plusMinutes(ACCOUNT_LOCK_DURATION_MINUTES);
             if (LocalDateTime.now().isBefore(unlockTime)) {
-                throw new UnauthorizedException("Account is temporarily locked. Please try again later.");
+                logger.warn("Account locked for user: {}. Unlock time: {}", user.getEmail(), unlockTime);
+                throw new UnauthorizedException("Account is temporarily locked due to multiple failed login attempts. Please try again after " + ACCOUNT_LOCK_DURATION_MINUTES + " minutes.");
             } else {
                 // Unlock account
+                logger.info("Unlocking account for user: {}", user.getEmail());
                 user.resetFailedLoginAttempts();
                 userRepository.save(user);
             }
@@ -172,26 +175,44 @@ public class AuthServiceImpl implements AuthService {
         
         // Verify password
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            logger.warn("Failed login attempt for user: {}. Current failed attempts: {}", user.getEmail(), user.getFailedLoginAttempts());
+            
             user.incrementFailedLoginAttempts();
             userRepository.save(user);
             
+            logger.info("Updated failed attempts for user: {} to {}", user.getEmail(), user.getFailedLoginAttempts());
+            
+            // Send account lock notification if account is now locked
             if (user.getFailedLoginAttempts() >= MAX_FAILED_ATTEMPTS) {
-                emailService.sendAccountLockNotification(user.getEmail(), user.getFirstName());
+                logger.warn("Account locked for user: {} after {} failed attempts", user.getEmail(), user.getFailedLoginAttempts());
+                try {
+                    emailService.sendAccountLockNotification(user.getEmail(), user.getFirstName());
+                    logger.info("Account lock notification sent to: {}", user.getEmail());
+                } catch (Exception e) {
+                    logger.error("Failed to send account lock notification to {}: {}", user.getEmail(), e.getMessage());
+                }
             }
             
             throw new UnauthorizedException("Invalid email or password");
         }
         
         // Reset failed attempts on successful login
-        user.resetFailedLoginAttempts();
-        userRepository.save(user);
+        if (user.getFailedLoginAttempts() > 0) {
+            logger.info("Resetting failed login attempts for user: {}", user.getEmail());
+            user.resetFailedLoginAttempts();
+            userRepository.save(user);
+        }
         
         // Generate JWT token
         String token = jwtTokenService.generateToken(user, request.isRememberMe());
         long expiresIn = jwtTokenService.getTokenExpirationInSeconds(request.isRememberMe());
         
-        // Create session records
-        createUserSession(user, token, clientInfo, request.isRememberMe());
+        // Create session records (handle Redis errors gracefully)
+        try {
+            createUserSession(user, token, clientInfo, request.isRememberMe());
+        } catch (Exception e) {
+            logger.warn("Failed to create session records for user {}: {}. Login will continue without session tracking.", user.getEmail(), e.getMessage());
+        }
         
         logger.info("User authenticated successfully: {}", user.getEmail());
         
@@ -226,28 +247,33 @@ public class AuthServiceImpl implements AuthService {
     }
     
     @Override
+    @Override
     public void initiatePasswordReset(String email, String clientInfo) {
         logger.info("Initiating password reset for email: {}", email);
         
         Optional<User> userOpt = userRepository.findByEmail(email);
         if (userOpt.isEmpty()) {
-            // Don't reveal if email exists
+            // Don't reveal if email exists - but still log for debugging
             logger.info("Password reset requested for non-existent email: {}", email);
             return;
         }
         
         User user = userOpt.get();
         
-        // Check rate limiting
+        // Check rate limiting - allow 3 requests per hour per email
         LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
         long recentRequests = passwordResetTokenRepository.countRecentRequestsByUserId(user.getId(), oneHourAgo);
         
+        logger.debug("Recent password reset requests for user {}: {} (limit: {})", user.getEmail(), recentRequests, MAX_RESET_REQUESTS_PER_HOUR);
+        
         if (recentRequests >= MAX_RESET_REQUESTS_PER_HOUR) {
+            logger.warn("Rate limit exceeded for password reset requests for user: {}", user.getEmail());
             throw new ValidationException("Too many password reset requests. Please try again later.");
         }
         
-        // Invalidate existing tokens
+        // Invalidate existing tokens for this user
         passwordResetTokenRepository.invalidateAllUserTokens(user.getId());
+        logger.debug("Invalidated existing password reset tokens for user: {}", user.getEmail());
         
         // Create new reset token
         String resetToken = UUID.randomUUID().toString();
@@ -262,28 +288,51 @@ public class AuthServiceImpl implements AuthService {
         );
         
         passwordResetTokenRepository.save(token);
+        logger.info("Created password reset token for user: {} (expires at: {})", user.getEmail(), expiresAt);
         
         // Send reset email
-        emailService.sendPasswordResetEmail(user.getEmail(), user.getFirstName(), resetToken);
-        
-        logger.info("Password reset email sent for user: {}", user.getEmail());
+        try {
+            emailService.sendPasswordResetEmail(user.getEmail(), user.getFirstName(), resetToken);
+            logger.info("Password reset email sent successfully for user: {}", user.getEmail());
+        } catch (Exception e) {
+            logger.error("Failed to send password reset email for user {}: {}", user.getEmail(), e.getMessage());
+            // Don't throw exception - token is still valid
+        }
     }
     
     @Override
     public void resetPassword(ResetPasswordRequest request) {
-        logger.info("Resetting password with token: {}", request.getToken());
+        logger.info("Attempting to reset password with token: {}", request.getToken());
         
         if (!request.isPasswordMatching()) {
+            logger.warn("Password reset failed: passwords do not match for token: {}", request.getToken());
             throw new ValidationException("Passwords do not match");
         }
         
         // Validate password complexity
         validatePasswordComplexity(request.getNewPassword());
         
+        // Find valid token
+        LocalDateTime now = LocalDateTime.now();
         Optional<PasswordResetToken> tokenOpt = passwordResetTokenRepository
-                .findValidTokenByToken(request.getToken(), LocalDateTime.now());
+                .findValidTokenByToken(request.getToken(), now);
         
         if (tokenOpt.isEmpty()) {
+            logger.warn("Password reset failed: invalid or expired token: {}", request.getToken());
+            
+            // Check if token exists but is expired or used
+            Optional<PasswordResetToken> anyTokenOpt = passwordResetTokenRepository.findByToken(request.getToken());
+            if (anyTokenOpt.isPresent()) {
+                PasswordResetToken existingToken = anyTokenOpt.get();
+                if (existingToken.isUsed()) {
+                    logger.warn("Token already used: {}", request.getToken());
+                } else if (existingToken.isExpired()) {
+                    logger.warn("Token expired: {} (expired at: {})", request.getToken(), existingToken.getExpiresAt());
+                }
+            } else {
+                logger.warn("Token not found: {}", request.getToken());
+            }
+            
             throw new ValidationException("Invalid or expired reset token");
         }
         
@@ -291,10 +340,12 @@ public class AuthServiceImpl implements AuthService {
         Optional<User> userOpt = userRepository.findById(resetToken.getUserId());
         
         if (userOpt.isEmpty()) {
+            logger.error("User not found for valid reset token: {} (userId: {})", request.getToken(), resetToken.getUserId());
             throw new ValidationException("User not found");
         }
         
         User user = userOpt.get();
+        logger.info("Resetting password for user: {}", user.getEmail());
         
         // Update password
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
@@ -303,9 +354,11 @@ public class AuthServiceImpl implements AuthService {
         // Mark token as used
         resetToken.markAsUsed();
         passwordResetTokenRepository.save(resetToken);
+        logger.debug("Marked reset token as used: {}", request.getToken());
         
         // Invalidate all user sessions (logout from all devices)
         userSessionRepository.deactivateAllUserSessions(user.getId());
+        logger.debug("Deactivated all sessions for user: {}", user.getEmail());
         
         // Remove Redis sessions (optional - don't fail if Redis is unavailable)
         try {
@@ -316,15 +369,47 @@ public class AuthServiceImpl implements AuthService {
         }
         
         // Send confirmation email
-        emailService.sendPasswordChangeConfirmation(user.getEmail(), user.getFirstName());
+        try {
+            emailService.sendPasswordChangeConfirmation(user.getEmail(), user.getFirstName());
+            logger.info("Password change confirmation email sent for user: {}", user.getEmail());
+        } catch (Exception e) {
+            logger.error("Failed to send password change confirmation email for user {}: {}", user.getEmail(), e.getMessage());
+            // Don't throw exception - password was already changed successfully
+        }
         
-        logger.info("Password reset successfully for user: {}", user.getEmail());
+        logger.info("Password reset completed successfully for user: {}", user.getEmail());
     }
     
     @Override
     public UserDto getUserProfile(String token) {
         User user = getUserFromToken(token);
         return convertToUserDto(user);
+    }
+    
+    /**
+     * Clean up expired password reset tokens
+     * This method should be called periodically (e.g., via scheduled task)
+     */
+    @Transactional
+    public void cleanupExpiredPasswordResetTokens() {
+        LocalDateTime now = LocalDateTime.now();
+        passwordResetTokenRepository.deleteExpiredTokens(now);
+        logger.debug("Cleaned up expired password reset tokens");
+    }
+    
+    /**
+     * Get password reset token info for debugging (admin only)
+     */
+    public String getPasswordResetTokenInfo(String token) {
+        Optional<PasswordResetToken> tokenOpt = passwordResetTokenRepository.findByToken(token);
+        if (tokenOpt.isEmpty()) {
+            return "Token not found";
+        }
+        
+        PasswordResetToken resetToken = tokenOpt.get();
+        return String.format("Token: %s, Used: %s, Expired: %s, Created: %s, Expires: %s", 
+            token, resetToken.isUsed(), resetToken.isExpired(), 
+            resetToken.getCreatedAt(), resetToken.getExpiresAt());
     }
     
     @Override
@@ -386,20 +471,26 @@ public class AuthServiceImpl implements AuthService {
             jwtTokenService.getTokenExpirationInSeconds(rememberMe)
         );
         
-        // Create database session
-        UserSession session = new UserSession(
-            user.getId(),
-            tokenHash,
-            expiresAt,
-            clientInfo,
-            extractIpFromClientInfo(clientInfo)
-        );
-        userSessionRepository.save(session);
+        // Create database session (this is essential and should not fail)
+        try {
+            UserSession session = new UserSession(
+                user.getId(),
+                tokenHash,
+                expiresAt,
+                clientInfo,
+                extractIpFromClientInfo(clientInfo)
+            );
+            userSessionRepository.save(session);
+            logger.debug("Database session created successfully for user: {}", user.getEmail());
+        } catch (Exception e) {
+            logger.error("Failed to create database session for user {}: {}", user.getEmail(), e.getMessage());
+            throw new RuntimeException("Failed to create user session", e);
+        }
         
         // Create Redis session (optional - don't fail if Redis is unavailable)
         try {
             RedisUserSession redisSession = new RedisUserSession(
-                session.getId().toString(),
+                UUID.randomUUID().toString(), // Generate a unique ID for Redis session
                 user.getId(),
                 user.getEmail(),
                 user.getFirstName(),

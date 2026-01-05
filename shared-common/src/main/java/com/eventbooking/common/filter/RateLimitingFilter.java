@@ -37,7 +37,8 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     private static final int AUTH_LIMIT_FOR_PERIOD = 5; // requests
     private static final Duration AUTH_LIMIT_REFRESH_PERIOD = Duration.ofMinutes(1);
     
-    private static final int PASSWORD_RESET_LIMIT = 3; // requests
+    // More permissive limits for password reset at filter level (real control is in service)
+    private static final int PASSWORD_RESET_LIMIT = 10; // requests per hour (service controls the real limit of 3)
     private static final Duration PASSWORD_RESET_PERIOD = Duration.ofHours(1);
     
     public RateLimitingFilter() {
@@ -64,13 +65,20 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         try {
             // Attempt to acquire permission
             if (!rateLimiter.acquirePermission()) {
-                log.warn("Rate limit exceeded for client: {} on endpoint: {}", clientId, path);
+                log.warn("Rate limit exceeded for client: {} on endpoint: {} (Filter level)", clientId, path);
                 handleRateLimitExceeded(response);
                 return;
             }
             
             // Add rate limit headers to response
             addRateLimitHeaders(response, rateLimiter);
+            
+            // Log successful rate limit check for password reset endpoints
+            if (path.contains("/auth/forgot-password") || path.contains("/auth/reset-password")) {
+                RateLimiter.Metrics metrics = rateLimiter.getMetrics();
+                log.debug("Password reset rate limit check passed for client: {} - Available permissions: {}", 
+                    clientId, metrics.getAvailablePermissions());
+            }
             
             filterChain.doFilter(request, response);
             
@@ -85,6 +93,14 @@ public class RateLimitingFilter extends OncePerRequestFilter {
      * Get client identifier from request (IP address or user ID)
      */
     private String getClientIdentifier(HttpServletRequest request) {
+        // For password reset endpoints, try to use email from request body
+        String path = request.getRequestURI();
+        if (path.contains("/auth/forgot-password") || path.contains("/auth/reset-password")) {
+            // For password reset, we want to rate limit by email, not IP
+            // This will be handled at the service level, so use a more permissive approach here
+            return "password-reset:" + getClientIpAddress(request);
+        }
+        
         // Try to get user ID from request attribute (set by authentication filter)
         Object userId = request.getAttribute("userId");
         if (userId != null) {
@@ -92,6 +108,13 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         }
         
         // Fall back to IP address
+        return "ip:" + getClientIpAddress(request);
+    }
+    
+    /**
+     * Extract client IP address from request
+     */
+    private String getClientIpAddress(HttpServletRequest request) {
         String clientIp = request.getHeader("X-Forwarded-For");
         if (clientIp == null || clientIp.isEmpty()) {
             clientIp = request.getRemoteAddr();
@@ -99,8 +122,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             // X-Forwarded-For can contain multiple IPs, take the first one
             clientIp = clientIp.split(",")[0].trim();
         }
-        
-        return "ip:" + clientIp;
+        return clientIp;
     }
     
     /**
